@@ -3,6 +3,7 @@
 
 import numpy as np
 from numpy import fft
+from scipy.stats import binned_statistic
 from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 
@@ -11,51 +12,90 @@ class FeatureGenerator:
     """Class for generating features.
 
     Attributes:
-        feature_type: Type of feature to generate.
-            allowed values: "fft_bins", "fft_peaks"
         Fs: Sampling frequency (Hz).
         freq: Corresponding frequencies:
             dim: (D, N_fft/2)
     """
 
-    def __init__(self, feature_type):
-        # validate type of feature:
-        if feature_type != "fft_bins" and feature_type != "fft_peaks":
-            raise Exception("Invalid feature type")
-
-        self.feature_type = feature_type
+    def __init__(self):
         self.Fs = None
         self.freq = None
 
-    def generate_features(self, X_raw, Fs, N_fft=None):
+    def generate_features(self, feature_type, X_raw, Fs, N_fft=None, norm=True, freq_range=None, n_bins=None):
         """Generates features from audio data.
 
         Args:
+            feature_type: Type of feature to generate.
+                allowed values: "fft_bins", "fft_peaks"
             X_raw: List of raw audio data numpy arrays.
                 length: N
             Fs: Sampling frequency (Hz)
             N_fft: Number of FFT points to use.
                 If None, a default number of FFT points is used.
+            norm: Selects whether to normalize raw audio data.
+            freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for binning (ignored if
+                feature_type != "fft_bins").
+            n_bins: Number of bins to use (ignored if feature_type != "fft_bins").
 
         Returns:
             X: Generated features.
                 dim: (N, D)
         """
 
+        # validate feature type:
+        if feature_type != "fft_bins" and feature_type != "fft_peaks":
+            raise Exception("Invalid feature type.")
+
         # generate features:
-        if self.feature_type == "fft_bins":
-            X = None
-        elif self.feature_type == "fft_peaks":
+        if feature_type == "fft_bins":
+            if freq_range is None:
+                raise Exception("freq_range parameter is None.")
+            if n_bins is None:
+                raise Exception("n_bins parameter is None.")
+            X, _ = self.fft_bins(X_raw, Fs, freq_range, n_bins, N_fft=None, norm=norm)
+        elif feature_type == "fft_peaks":
             X = self.fft_peaks(X_raw, Fs, N_fft=N_fft)
 
         return X
 
-    def fft_peaks(self, X_raw, Fs, N_fft=None):
+    def fft_bins(self, X_raw, Fs, freq_range, n_bins, N_fft=None, norm=True):
+        """Computes binned FFTs of raw audio data.
+
+        Args:
+            X_raw: List of raw audio data numpy arrays.
+                length: N
+            Fs: sampling frequency (Hz)
+            freq_range: (min_freq, max_freq) range of frequencies to include for binning (Hz).
+            n_bins: Number of bins to use.
+            N_fft: Number of FFT points to use.
+                If None, a default number of FFT points is used.
+            norm: Selects whether to normalize raw audio data.
+
+        Returns:
+            X_fft_bin: Binned FFTs of raw audio data.
+                dim: (N, n_bins)
+            bin_edges: Edges of frequency bins (Hz).
+                dim: (n_bins+1, )
+        """
+
+        # compute FFTs of audio data:
+        X_fft = self.compute_fft(X_raw, Fs, N_fft=N_fft, norm=norm)
+
+        # compute binned means of FFTs:
+        X_fft_bin, bin_edges, bin_indices = binned_statistic(self.freq, X_fft, statistic="mean", bins=n_bins,
+                                                             range=freq_range)
+
+        return X_fft_bin, bin_edges
+
+    def fft_peaks(self, X_raw, Fs, N_fft=None, norm=True):
         """
         Args:
             X_raw: List of raw audio data numpy arrays.
                 length: N
             Fs: sampling frequency (Hz)
+            N_fft: Number of FFT points to use.
+                If None, a default number of FFT points is used.
+            norm: Selects whether to normalize raw audio data.
 
         Returns:
             peaks: List of peaks in raw audio numpy arrays.
@@ -67,7 +107,7 @@ class FeatureGenerator:
         D = 3
 
         # compute FFT to analyze frequencies
-        X_fft = self.compute_fft(X_raw, Fs, N_fft=N_fft)
+        X_fft = self.compute_fft(X_raw, Fs, N_fft=N_fft, norm=norm)
 
         # parameters for finding peaks
         dist = 10
@@ -87,8 +127,8 @@ class FeatureGenerator:
 
         return peaks
 
-    def compute_fft(self, X_raw, Fs, N_fft=None):
-        """Computes FFT of raw audio data.
+    def compute_fft(self, X_raw, Fs, N_fft=None, norm=True):
+        """Computes FFTs of raw audio data.
 
         Args:
             X_raw: List of raw audio data numpy arrays.
@@ -96,6 +136,7 @@ class FeatureGenerator:
             Fs: Sampling frequency (Hz)
             N_fft: Number of FFT points to use.
                 If None, default number of FFT points is used.
+            norm: Selects whether to normalize raw audio data.
 
         Returns:
             X_fft: FFT values.
@@ -111,11 +152,20 @@ class FeatureGenerator:
                 if len(X_raw[i]) > N_fft_max:
                     N_fft_max = len(X_raw[i])
             N_fft = N_fft_max
+        # ensure N_fft is even:
+        if N_fft % 2 == 1:
+            N_fft += 1
 
-        # compute FFTs:
+        # normalize audio data, if selected:
+        if norm:
+            X = self.normalize_data(X_raw)
+        else:
+            X = X_raw
+
+        # compute FFTs of audio data:
         X_fft = np.zeros((N, int(N_fft/2)))
         for i in range(N):
-            X_fft_orig = np.abs(fft.fft(X_raw[i], n=N_fft, norm="ortho"))
+            X_fft_orig = np.abs(fft.fft(X[i], n=N_fft, norm="forward"))
             # extract non-negative part of PSD:
             X_fft_pos = X_fft_orig[0:int(N_fft/2)]
             X_fft[i] = X_fft_pos
@@ -129,7 +179,7 @@ class FeatureGenerator:
 
         return X_fft
 
-    def plot_time(self, X_raw, Fs, example, fig_num=1):
+    def plot_time(self, X_raw, Fs, example, norm=True, fig_num=1):
         """Plots raw audio data in time domain.
 
         Args:
@@ -137,19 +187,28 @@ class FeatureGenerator:
                 length: N
             Fs: Sampling frequency (Hz)
             example: Index of data example.
+            norm: Selects whether to normalize raw audio data.
             fig_num: matplotlib figur number.
 
-        Returns:
+        Returns: None
         """
 
-        n_samples = len(X_raw[example])
-        t = (1/Fs) * np.arange(0, n_samples)
+        x_raw = X_raw[example]
+        n_samples = len(x_raw)
 
+        # normalize audio data, if selected:
+        if norm:
+            x = self.normalize_data([x_raw])[0]
+        else:
+            x = x_raw
+
+        # plot audio data in time domain:
+        t = (1/Fs) * np.arange(0, n_samples)
         plt.figure(fig_num)
-        plt.plot(t, X_raw[example])
+        plt.plot(t, x)
         plt.xlabel("Time (s)")
         plt.ylabel("Amplitude")
-        plt.title("Raw Audio Data of Example " + str(example))
+        plt.title("Audio Waveform of Example " + str(example))
 
     def plot_freq(self, X_fft, example, fig_num=1):
         """Plots FFT of audio data in frequency domain.
@@ -160,7 +219,7 @@ class FeatureGenerator:
             example: Index of data example.
             fig_num: matplotlib figur number.
 
-        Returns:
+        Returns: None
         """
 
         plt.figure(fig_num)
@@ -168,4 +227,26 @@ class FeatureGenerator:
         plt.xlabel("Frequency (Hz)")
         plt.ylabel("Amplitude")
         plt.title("FFT of Audio Data of Example " + str(example))
+
+    @staticmethod
+    def normalize_data(X_raw):
+        """Normalizes each audio file so that its maximum magnitude is 1.
+
+        Args:
+            X_raw: List of raw audio data numpy arrays.
+                length: N
+
+        Returns:
+            X_norm: List of normalized audio data numpy arrays.
+                length: N
+        """
+
+        N = len(X_raw)
+        # normalize all audio files
+        X_norm = []
+        for i in range(N):
+            max_val = np.amax(np.abs(X_raw[i]))
+            X_norm.append(X_raw[i] / max_val)
+
+        return X_norm
 
