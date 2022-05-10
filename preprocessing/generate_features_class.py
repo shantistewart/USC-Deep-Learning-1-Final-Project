@@ -169,7 +169,7 @@ class FeatureGenerator:
         # compute FFTs of audio data:
         X_fft = np.zeros((N, int(N_fft/2)))
         for i in range(N):
-            X_fft_orig = np.abs(fft.fft(X[i], n=N_fft, norm="forward"))
+            X_fft_orig = np.abs(fft.fft(X[i], n=N_fft, norm="ortho"))
             # extract non-negative part of PSD:
             X_fft_pos = X_fft_orig[0:int(N_fft/2)]
             X_fft[i] = X_fft_pos
