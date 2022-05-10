@@ -9,6 +9,7 @@ from sklearn.utils.multiclass import unique_labels
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
+
 class MLP(ClassifierMixin, BaseEstimator):
     """MLP class.
 
@@ -22,7 +23,7 @@ class MLP(ClassifierMixin, BaseEstimator):
         self.model = None
         # GPU flag
         self._gpu = use_gpu and torch.cuda.is_available()
-        pass
+        #pass
 
     def build_model(self):
         self.layer_dims = [self.n_features_in] + self.hidden_layer_dims + self.output_dim
@@ -64,7 +65,7 @@ class MLP(ClassifierMixin, BaseEstimator):
 
         # train MLP:
         self.build_model()
-        # CODE HERE
+
         torch_x = torch.from_numpy(self.X).float()
         torch_y = torch.from_numpy(self.y).float()
         if self.gpu:
@@ -78,9 +79,9 @@ class MLP(ClassifierMixin, BaseEstimator):
         loss_func = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
-        correct = 0
         self.history = []
         for epoch in range(self.num_epochs):
+            correct = 0
             for idx, (minibatch, target) in enumerate(train_loader):
                 y_pred = self.model(Variable(minibatch))
                 loss = loss_func(y_pred, Variable(target.cuda().float()) if self.gpu else target.float())
@@ -121,7 +122,6 @@ class MLP(ClassifierMixin, BaseEstimator):
         # split X accordingly per batch
         for batch in np.array_split(X, batch_length):
             x_pred = Variable(torch.from_numpy(batch).float())
-            # need to define model
             y_pred = self.model(x_pred.cuda() if self._gpu else x_pred)
             results.append(y_pred)
 
