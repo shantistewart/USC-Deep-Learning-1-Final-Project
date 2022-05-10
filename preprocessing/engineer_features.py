@@ -14,7 +14,7 @@ class FeatureGenerator:
             allowed values: "fft"
         Fs: Sampling frequency (Hz).
         freq: Corresponding frequencies:
-            dim: (D, )
+            dim: (D, N_fft/2)
     """
 
     def __init__(self, feature_type="fft"):
@@ -57,33 +57,36 @@ class FeatureGenerator:
                 If None, default number of FFT points is used.
 
         Returns:
-            X_fft: FFT features.
-                dim: (N, D)
+            X_fft: FFT values.
+                dim: (N, N_fft/2)
         """
 
-        # set default value for N_fft:
-        if N_fft is None:
-            pass
-
         N = len(X_raw)
-        D = int(N_fft/2)
-        X_fft = np.zeros((N, D))
 
+        # set default value for N_fft, if no value provided:
+        if N_fft is None:
+            N_fft_max = 0
+            for i in range(N):
+                if len(X_raw[i]) > N_fft_max:
+                    N_fft_max = len(X_raw[i])
+            N_fft = N_fft_max
+
+        # compute FFTs:
+        X_fft = np.zeros((N, int(N_fft/2)))
         for i in range(N):
             X_fft_orig = np.abs(fft.fft(X_raw[i], n=N_fft, norm="ortho"))
             # extract non-negative part of PSD:
-            X_fft_pos = X_fft_orig[0:D]
+            X_fft_pos = X_fft_orig[0:int(N_fft/2)]
             X_fft[i] = X_fft_pos
         # frequencies (same for all N examples):
         freq_orig = fft.fftfreq(N_fft, d=1 / Fs)
         # n_freq = X_fft.shape[-1]
-        freq = freq_orig[0:D]
+        freq = freq_orig[0:int(N_fft/2)]
 
         self.Fs = Fs
         self.freq = freq
 
         return X_fft
-
     def plot_time(self, X_raw, Fs, example, fig_num=1):
         """Plots raw audio data in time domain.
 
@@ -110,8 +113,8 @@ class FeatureGenerator:
         """Plots FFT of audio data in frequency domain.
 
         Args:
-            X_fft: FFT features.
-                dim: (N, D)
+            X_fft: FFT values.
+                dim: (N, N_fft/2)
             example: Index of data example.
             fig_num: matplotlib figur number.
 
