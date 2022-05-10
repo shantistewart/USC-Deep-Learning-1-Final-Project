@@ -112,7 +112,7 @@ class FeatureGenerator:
         h = 50
         prom = 1
 
-        peaks = np.zeros(N, D)
+        peaks = np.zeros((N, D))
         for i in range(N):
             curr = X_fft[i]
             peak_indices, _ = find_peaks(curr, distance=dist, height=h, prominence=prom)
