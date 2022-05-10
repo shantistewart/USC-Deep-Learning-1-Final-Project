@@ -3,7 +3,7 @@
 
 import matplotlib.pyplot as plt
 from preprocessing.load_data_class import DataLoader
-from preprocessing.generate_features import FeatureGenerator
+from preprocessing.generate_features_class import FeatureGenerator
 
 
 # path to data folder:
