@@ -1,5 +1,13 @@
 """File containing class for loading data."""
+import numpy as np
+import pandas as pd
+import os
+from scipy.io.wavfile import read
 
+
+# major and minor class labels:
+MAJ = 0
+MIN = 1
 
 class DataLoader:
     """Class for loading and splitting data into features and labels.
@@ -24,5 +32,12 @@ class DataLoader:
                 dim: (N, )
         """
 
+        for root, dirs, files in os.walk(data_folder, topdown = True):
+            
+
+            files = sorted(files)
+            for dir in dirs:
+            for f in files:
+                X = read(os.path.join(root, f))
         # return X, y
 
