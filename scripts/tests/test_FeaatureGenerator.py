@@ -13,10 +13,11 @@ data_folder = "../../data/"
 print()
 # load data:
 data_loader = DataLoader()
-X_raw, y, Fs = data_loader.load_data(data_folder)
+X_raw, y, _, _ = data_loader.load_and_split_data(data_folder)
+Fs = data_loader.Fs
 
 # test FeatureGenerator:
-example = 10
+example = 20
 feature_generator = FeatureGenerator(feature_type="fft")
 # plot raw audio data in time domain:
 feature_generator.plot_time(X_raw, Fs, example, fig_num=1)

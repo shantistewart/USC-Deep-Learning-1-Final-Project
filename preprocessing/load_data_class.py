@@ -3,6 +3,8 @@
 
 import os
 from scipy.io.wavfile import read
+from sklearn.model_selection import train_test_split
+
 
 # major and minor chord class labels:
 MAJ = 0
@@ -27,6 +29,33 @@ class DataLoader:
         self.N_train = None
         self.N_test = None
 
+    def load_and_split_data(self, data_folder):
+        """Loads data and splits into training/test sets.
+
+        Args:
+            data_folder: Path of data folder.
+
+        Returns:
+            X_train: Training audio data.
+                length: N_train
+            y_train: Training labels.
+                length: N_train
+            X_test: Test audio data.
+                length: N_test
+            y_test: Test abels.
+                length: N_train
+        """
+
+        # load data and labels:
+        X, y, _ = self.load_data(data_folder)
+
+        # split into training/test sets:
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=self.test_fract, random_state=24)
+        self.N_train = len(y_train)
+        self.N_test = len(y_test)
+
+        return X_train, y_train, X_test, y_test
+
     def load_data(self, data_folder):
         """Loads data.
 
@@ -35,9 +64,9 @@ class DataLoader:
 
         Returns:
             X: Audio data.
-                dim: (N, n_samples)
+                length: N
             y: Labels.
-                dim: (N, )
+                length: N
         """
 
         X = []
