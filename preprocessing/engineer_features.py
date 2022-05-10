@@ -42,12 +42,12 @@ class FeatureGenerator:
         """
 
         if self.feature_type == "fft":
-            X = self.fft_bins(X_raw, Fs, N_fft=N_fft)
+            pass
+        elif self.feature_type == "find_peaks":
+            pass
 
-        return X
-
-    def fft_bins(self, X_raw, Fs, N_fft=None):
-        """Generates features from audio data.
+    def compute_fft(self, X_raw, Fs, N_fft=None):
+        """Computes FFT of raw audio data.
 
         Args:
             X_raw: List of raw audio data numpy arrays.
