@@ -31,13 +31,23 @@ class DataLoader:
             y: Labels.
                 dim: (N, )
         """
-
+        X = pd.Dataframe()
+        y = pd.Dataframe()
         for root, dirs, files in os.walk(data_folder, topdown = True):
-            
-
+            # label data
+            if dirs == 'major':
+                label = MAJ
+            elif dirs == 'minor':
+                label = MIN
+            # import data
             files = sorted(files)
-            for dir in dirs:
             for f in files:
-                X = read(os.path.join(root, f))
+                wav_file = read(os.path.join(root, f))
+                wav_label = label
+
+                X.append(wav_file)
+                y.append(wav_label)
+
+            return X, y
         # return X, y
 
