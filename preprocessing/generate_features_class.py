@@ -65,7 +65,7 @@ class FeatureGenerator:
             X_raw: List of raw audio data numpy arrays.
                 length: N
             Fs: sampling frequency (Hz)
-            freq_range: (min_freq, max_freq) range of frequencies to include for binning (Hz).
+            freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for binning.
             n_bins: Number of bins to use.
             N_fft: Number of FFT points to use.
                 If None, a default number of FFT points is used.
@@ -179,8 +179,8 @@ class FeatureGenerator:
 
         return X_fft
 
-    def plot_time(self, X_raw, Fs, example, norm=True, fig_num=1):
-        """Plots raw audio data in time domain.
+    def plot_signal(self, X_raw, Fs, example, norm=True, fig_num=1):
+        """Plots audio signal in time domain.
 
         Args:
             X_raw: List of raw audio data numpy arrays.
@@ -196,13 +196,13 @@ class FeatureGenerator:
         x_raw = X_raw[example]
         n_samples = len(x_raw)
 
-        # normalize audio data, if selected:
+        # normalize audio signal, if selected:
         if norm:
             x = self.normalize_data([x_raw])[0]
         else:
             x = x_raw
 
-        # plot audio data in time domain:
+        # plot audio signal in time domain:
         t = (1/Fs) * np.arange(0, n_samples)
         plt.figure(fig_num)
         plt.plot(t, x)
@@ -210,20 +210,28 @@ class FeatureGenerator:
         plt.ylabel("Amplitude")
         plt.title("Audio Waveform of Example " + str(example))
 
-    def plot_freq(self, X_fft, example, fig_num=1):
-        """Plots FFT of audio data in frequency domain.
+    def plot_fft(self, X_fft, example, max_freq=None, fig_num=1):
+        """Plots FFT of audio signal.
 
         Args:
             X_fft: FFT values.
                 dim: (N, N_fft/2)
             example: Index of data example.
+            max_freq: Maximum frequency to plot (in Hz).
+                If None, all frequencies are plotted.
             fig_num: matplotlib figur number.
 
         Returns: None
         """
 
+        # plot all frequencies, if max_freq is None:
+        if max_freq is None:
+            max_freq = self.freq[len(self.freq)-1]
+
+        # plot FFT of audio signal:
+        x_fft = X_fft[example]
         plt.figure(fig_num)
-        plt.plot(self.freq, X_fft[example])
+        plt.plot(self.freq[self.freq <= max_freq], x_fft[self.freq <= max_freq])
         plt.xlabel("Frequency (Hz)")
         plt.ylabel("Amplitude")
         plt.title("FFT of Audio Data of Example " + str(example))

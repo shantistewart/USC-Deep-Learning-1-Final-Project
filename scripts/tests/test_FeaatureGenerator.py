@@ -30,15 +30,16 @@ feature_generator = FeatureGenerator()
 example = 5
 
 # test computation of FFT:
+max_freq = 3000
 # plot raw audio data in time domain:
-feature_generator.plot_time(X_raw, Fs, example, norm=True, fig_num=1)
+feature_generator.plot_signal(X_raw, Fs, example, norm=True, fig_num=1)
 # compute and plot FFT:
 X_fft = feature_generator.compute_fft(X_raw, Fs, N_fft=N_fft, norm=True)
-feature_generator.plot_freq(X_fft, example, fig_num=2)
+feature_generator.plot_fft(X_fft, example, max_freq=max_freq, fig_num=2)
 
 # test fft_bins() method:
-freq_range = (50.0, 100.0)
-n_bins = 5
+freq_range = (50.0, 1000.0)
+n_bins = 19
 X_fft_bin = feature_generator.generate_features("fft_bins", X_raw, Fs, N_fft=N_fft, norm=True, freq_range=freq_range,
                                                 n_bins=n_bins)
 print(X_fft_bin.shape)
