@@ -26,7 +26,7 @@ class FeatureGenerator:
         self.Fs = None
         self.freq = None
 
-    def generate_features(self, X_raw, Fs, N_fft=128):
+    def generate_features(self, X_raw, Fs, N_fft=None):
         """Generates features from audio data.
 
         Args:
@@ -34,31 +34,55 @@ class FeatureGenerator:
                 length: N
             Fs: Sampling frequency (Hz)
             N_fft: Number of FFT points to use.
+                If None, default number of FFT points is used.
 
         Returns:
             X: Generated features.
                 dim: (N, D)
         """
 
+        if self.feature_type == "fft":
+            X = self.fft_bins(X_raw, Fs, N_fft=N_fft)
+
+        return X
+
+    def fft_bins(self, X_raw, Fs, N_fft=None):
+        """Generates features from audio data.
+
+        Args:
+            X_raw: List of raw audio data numpy arrays.
+                length: N
+            Fs: Sampling frequency (Hz)
+            N_fft: Number of FFT points to use.
+                If None, default number of FFT points is used.
+
+        Returns:
+            X_fft: FFT features.
+                dim: (N, D)
+        """
+
+        # set default value for N_fft:
+        if N_fft is None:
+            pass
+
         N = len(X_raw)
         D = int(N_fft/2)
-        X = np.zeros((N, D))
+        X_fft = np.zeros((N, D))
 
-        if self.feature_type == "fft":
-            for i in range(N):
-                X_fft_orig = np.abs(fft.fft(X_raw[i], n=N_fft, norm="ortho"))
-                # extract non-negative part of PSD:
-                X_fft = X_fft_orig[0:D]
-                X[i] = X_fft
-            # frequencies (same for all N examples):
-            freq_orig = fft.fftfreq(N_fft, d=1 / Fs)
-            # n_freq = X_fft.shape[-1]
-            freq = freq_orig[0:D]
+        for i in range(N):
+            X_fft_orig = np.abs(fft.fft(X_raw[i], n=N_fft, norm="ortho"))
+            # extract non-negative part of PSD:
+            X_fft_pos = X_fft_orig[0:D]
+            X_fft[i] = X_fft_pos
+        # frequencies (same for all N examples):
+        freq_orig = fft.fftfreq(N_fft, d=1 / Fs)
+        # n_freq = X_fft.shape[-1]
+        freq = freq_orig[0:D]
 
         self.Fs = Fs
         self.freq = freq
 
-        return X
+        return X_fft
 
     def plot_time(self, X_raw, Fs, example, fig_num=1):
         """Plots raw audio data in time domain.
@@ -73,7 +97,7 @@ class FeatureGenerator:
         Returns:
         """
 
-        n_samples =  len(X_raw[example])
+        n_samples = len(X_raw[example])
         t = (1/Fs) * np.arange(0, n_samples)
 
         plt.figure(fig_num)
