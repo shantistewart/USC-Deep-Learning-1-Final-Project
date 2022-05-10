@@ -45,8 +45,11 @@ print(X_fft_bin.shape)
 
 # test fft_peaks() method:
 X_peaks_indices = feature_generator.generate_features("fft_peaks", X_raw, Fs, freq_range, n_peaks=5)
-print(X_peaks_indices[0])
+print(X_peaks_indices[example])
 
+curr = X_peaks_indices[example]
+for i in curr:
+    plt.axvline(x=i, color='red')
 
 # show plots:
 plt.show()

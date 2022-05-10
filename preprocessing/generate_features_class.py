@@ -123,13 +123,11 @@ class FeatureGenerator:
             h = curr.max() * 5/100
             peak_indices, _ = find_peaks(curr, height=h)
             # remove DC component
-            print(peak_indices)
             indices_over_50 = np.abs(peak_indices - 50)
-            print(indices_over_50)
             peak_indices = peak_indices[peak_indices > indices_over_50]
             # find D highest peaks
-            peak_indices = peak_indices[0:D-1]
-            peak_list[i] = peak_indices
+            peak_indices = peak_indices[0:D]
+            peak_list[i] = self.freq[peak_indices]
 
         return peak_list
 
