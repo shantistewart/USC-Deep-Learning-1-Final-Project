@@ -3,6 +3,7 @@
 
 import numpy as np
 from numpy import fft
+import matplotlib.pyplot as plt
 
 
 class FeatureGenerator:
@@ -11,6 +12,9 @@ class FeatureGenerator:
     Attributes:
         feature_type: Type of feature to generate.
             allowed values: "fft"
+        Fs: Sampling frequency (Hz).
+        freq: Corresponding frequencies:
+            dim: (D, )
     """
 
     def __init__(self, feature_type="fft"):
@@ -19,6 +23,8 @@ class FeatureGenerator:
             raise Exception("Invalid feature type")
 
         self.feature_type = feature_type
+        self.Fs = None
+        self.freq = None
 
     def generate_features(self, X_raw, Fs, N_fft=128):
         """Generates features from audio data.
@@ -32,8 +38,6 @@ class FeatureGenerator:
         Returns:
             X: Generated features.
                 dim: (N, D)
-            freq: Corresponding frequencies:
-                dim: (D, )
         """
 
         N = len(X_raw)
@@ -51,5 +55,48 @@ class FeatureGenerator:
             # n_freq = X_fft.shape[-1]
             freq = freq_orig[0:D]
 
-        return X, freq
+        self.Fs = Fs
+        self.freq = freq
+
+        return X
+
+    def plot_time(self, X_raw, Fs, example, fig_num=1):
+        """Plots raw audio data in time domain.
+
+        Args:
+            X_raw: List of raw audio data numpy arrays.
+                length: N
+            Fs: Sampling frequency (Hz)
+            example: Index of data example.
+            fig_num: matplotlib figur number.
+
+        Returns:
+        """
+
+        n_samples =  len(X_raw[example])
+        t = (1/Fs) * np.arange(0, n_samples)
+
+        plt.figure(fig_num)
+        plt.plot(t, X_raw[example])
+        plt.xlabel("Time (s)")
+        plt.ylabel("Amplitude")
+        plt.title("Raw Audio Data of Example " + str(example))
+
+    def plot_freq(self, X_fft, example, fig_num=1):
+        """Plots FFT of audio data in frequency domain.
+
+        Args:
+            X_fft: FFT features.
+                dim: (N, D)
+            example: Index of data example.
+            fig_num: matplotlib figur number.
+
+        Returns:
+        """
+
+        plt.figure(fig_num)
+        plt.plot(self.freq, X_fft[example])
+        plt.xlabel("Frequency (Hz)")
+        plt.ylabel("Amplitude")
+        plt.title("FFT of Audio Data of Example " + str(example))
 

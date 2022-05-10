@@ -1,46 +1,28 @@
 """File for testing DataLoader class."""
 
 
-import numpy as np
 import matplotlib.pyplot as plt
+from preprocessing.load_data_class import DataLoader
 from preprocessing.engineer_features import FeatureGenerator
 
 
+# path to data folder:
+data_folder = "../../data/"
+
+
 print()
+# load data:
+data_loader = DataLoader()
+X_raw, y, Fs = data_loader.load_data(data_folder)
+
 # test FeatureGenerator:
+example = 10
 feature_generator = FeatureGenerator(feature_type="fft")
-
-# test data:
-N = 10
-Fs = 100
-Ts = 1.0 / Fs
-temp = np.arange(0.0, 4.0, Ts)
-n_samples = temp.shape[0]
-
-t = np.arange(0.0, 4.0, Ts)
-X = []
-cos_freq = 10.0
-for i in range(N):
-    X.append(1.0 * np.cos(2 * np.pi * cos_freq * t))
-
-# plot in time-domain:
-n = 5
-plt.figure(1)
-plt.plot(t, X[n])
-plt.xlabel("Time (s)")
-plt.ylabel("Amplitude")
-plt.title("Cosine with Frequency " + str(cos_freq) + " Hz")
-
-# compute FFT:
-X_fft, freq = feature_generator.generate_features(X, Fs, N_fft=1024)
-
-# plot in time-domain:
-n = 5
-plt.figure(2)
-plt.plot(freq, X_fft[n])
-plt.xlabel("Frequency (Hz)")
-plt.ylabel("Amplitude")
-plt.title("FFT of Cosine with Frequency " + str(cos_freq) + " Hz")
+# plot raw audio data in time domain:
+feature_generator.plot_time(X_raw, Fs, example, fig_num=1)
+# compute and FFT:
+X_fft = feature_generator.generate_features(X_raw, Fs, N_fft=128)
+feature_generator.plot_freq(X_fft, example, fig_num=2)
 
 
 # show plots:
