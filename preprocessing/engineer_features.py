@@ -3,6 +3,7 @@
 
 import numpy as np
 from numpy import fft
+from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 
 
@@ -87,6 +88,43 @@ class FeatureGenerator:
         self.freq = freq
 
         return X_fft
+
+    def find_peaks(self, X_raw, Fs):
+        """
+        Args:
+            X_raw: List of raw audio data numpy arrays
+                length: N
+            Fs: sampling frequency (Hz)
+
+        Returns:
+            peaks: List of peaks in raw audio numpy arrays
+                dim: (N, D)
+        """
+        N = len(X_raw)
+        # choose the number of important peaks
+        D = 3
+
+        # compute FFT to analyze frequencies
+        X_fft = self.compute_fft(X_raw, Fs)
+
+        # parameters for finding peaks
+        dist = 10
+        h = 50
+        prom = 1
+
+        peaks = np.zeros(N, D)
+        for i in range(N):
+            curr = X_fft[i]
+            peak_indices, _ = find_peaks(curr, distance=dist, height=h, prominence=prom)
+            # remove DC component
+            indices_over_50 = np.abs(peak_indices - 50).argmin()
+            peak_indices = peak_indices[peak_indices > indices_over_50]
+            # find three highest peaks
+            peak_indices = peak_indices[0:D-1]
+            peaks[i] = curr[peak_indices]
+
+        return peaks
+
     def plot_time(self, X_raw, Fs, example, fig_num=1):
         """Plots raw audio data in time domain.
 
