@@ -35,11 +35,7 @@ class DataLoader:
         X = []
         y = []
         for root, dirs, _ in os.walk(data_folder, topdown=True):
-
-            print()
             for d in dirs:
-                print()
-                print(d)
                 # set label
                 if d == 'major':
                     label = MAJ
