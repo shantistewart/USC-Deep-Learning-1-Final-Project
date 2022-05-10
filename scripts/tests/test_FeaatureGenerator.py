@@ -40,9 +40,11 @@ feature_generator.plot_fft(X_fft, example, max_freq=max_freq, fig_num=2)
 # test fft_bins() method:
 freq_range = (50.0, 1000.0)
 n_bins = 19
-X_fft_bin = feature_generator.generate_features("fft_bins", X_raw, Fs, N_fft=N_fft, norm=True, freq_range=freq_range,
-                                                n_bins=n_bins)
+X_fft_bin = feature_generator.generate_features("fft_bins", X_raw, Fs, freq_range, N_fft=N_fft, norm=True, n_bins=n_bins)
 print(X_fft_bin.shape)
+
+# test fft_peaks() method:
+# CODE HERE
 
 
 # show plots:

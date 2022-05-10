@@ -21,7 +21,7 @@ class FeatureGenerator:
         self.Fs = None
         self.freq = None
 
-    def generate_features(self, feature_type, X_raw, Fs, N_fft=None, norm=True, freq_range=None, n_bins=None):
+    def generate_features(self, feature_type, X_raw, Fs, freq_range, N_fft=None, norm=True, n_bins=None, n_peaks=None):
         """Generates features from audio data.
 
         Args:
@@ -29,13 +29,13 @@ class FeatureGenerator:
                 allowed values: "fft_bins", "fft_peaks"
             X_raw: List of raw audio data numpy arrays.
                 length: N
-            Fs: Sampling frequency (Hz)
+            Fs: Sampling frequency (Hz).
+            freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for binning/peak finding.
             N_fft: Number of FFT points to use.
                 If None, a default number of FFT points is used.
             norm: Selects whether to normalize raw audio data.
-            freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for binning (ignored if
-                feature_type != "fft_bins").
-            n_bins: Number of bins to use (ignored if feature_type != "fft_bins").
+            n_bins: Number of bins to use in binning (ignored if feature_type != "fft_bins").
+            n_peaks: Number of peaks to find in peak finding (ignored if feature_type != "fft_peaks").
 
         Returns:
             X: Generated features.
@@ -48,23 +48,23 @@ class FeatureGenerator:
 
         # generate features:
         if feature_type == "fft_bins":
-            if freq_range is None:
-                raise Exception("freq_range parameter is None.")
             if n_bins is None:
                 raise Exception("n_bins parameter is None.")
             X, _ = self.fft_bins(X_raw, Fs, freq_range, n_bins, N_fft=None, norm=norm)
         elif feature_type == "fft_peaks":
-            X = self.fft_peaks(X_raw, Fs, N_fft=N_fft)
+            if n_peaks is None:
+                raise Exception("n_peaks parameter is None.")
+            X = self.fft_peaks(X_raw, Fs, freq_range, n_peaks, N_fft=N_fft, norm=norm)
 
         return X
 
     def fft_bins(self, X_raw, Fs, freq_range, n_bins, N_fft=None, norm=True):
-        """Computes binned FFTs of raw audio data.
+        """Computes binned FFTs of audio data.
 
         Args:
             X_raw: List of raw audio data numpy arrays.
                 length: N
-            Fs: sampling frequency (Hz)
+            Fs: Sampling frequency (Hz).
             freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for binning.
             n_bins: Number of bins to use.
             N_fft: Number of FFT points to use.
@@ -72,7 +72,7 @@ class FeatureGenerator:
             norm: Selects whether to normalize raw audio data.
 
         Returns:
-            X_fft_bin: Binned FFTs of raw audio data.
+            X_fft_bin: Binned FFTs of audio data.
                 dim: (N, n_bins)
             bin_edges: Edges of frequency bins (Hz).
                 dim: (n_bins+1, )
@@ -87,19 +87,23 @@ class FeatureGenerator:
 
         return X_fft_bin, bin_edges
 
-    def fft_peaks(self, X_raw, Fs, N_fft=None, norm=True):
+    def fft_peaks(self, X_raw, Fs, freq_range, n_peaks, N_fft=None, norm=True):
         """
+        Finds n_peaks largest peaks (and their locations) in FFTs of audio data.
+
         Args:
             X_raw: List of raw audio data numpy arrays.
                 length: N
-            Fs: sampling frequency (Hz)
+            Fs: Sampling frequency (Hz).
+            freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for finding peaks.
+            n_peaks: Number of peaks to find.
             N_fft: Number of FFT points to use.
                 If None, a default number of FFT points is used.
             norm: Selects whether to normalize raw audio data.
 
         Returns:
-            peaks: List of peaks in raw audio numpy arrays.
-                dim: (N, D)
+            peak_freq: Frequencies (locations) of peaks of FFTs of audio data.
+                dim: (N, n_peaks)
         """
 
         N = len(X_raw)
