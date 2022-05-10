@@ -1,4 +1,4 @@
-"""File containing class for engineering features."""
+"""File containing class for generating features."""
 
 
 import numpy as np
@@ -12,15 +12,15 @@ class FeatureGenerator:
 
     Attributes:
         feature_type: Type of feature to generate.
-            allowed values: "fft"
+            allowed values: "fft_bins", "fft_peaks"
         Fs: Sampling frequency (Hz).
         freq: Corresponding frequencies:
             dim: (D, N_fft/2)
     """
 
-    def __init__(self, feature_type="fft"):
+    def __init__(self, feature_type):
         # validate type of feature:
-        if feature_type is not None and feature_type != "fft":
+        if feature_type != "fft_bins" and feature_type != "fft_peaks":
             raise Exception("Invalid feature type")
 
         self.feature_type = feature_type
@@ -35,17 +35,57 @@ class FeatureGenerator:
                 length: N
             Fs: Sampling frequency (Hz)
             N_fft: Number of FFT points to use.
-                If None, default number of FFT points is used.
+                If None, a default number of FFT points is used.
 
         Returns:
             X: Generated features.
                 dim: (N, D)
         """
 
-        if self.feature_type == "fft":
-            pass
-        elif self.feature_type == "find_peaks":
-            pass
+        # generate features:
+        if self.feature_type == "fft_bins":
+            X = None
+        elif self.feature_type == "fft_peaks":
+            X = self.fft_peaks(X_raw, Fs, N_fft=N_fft)
+
+        return X
+
+    def fft_peaks(self, X_raw, Fs, N_fft=None):
+        """
+        Args:
+            X_raw: List of raw audio data numpy arrays.
+                length: N
+            Fs: sampling frequency (Hz)
+
+        Returns:
+            peaks: List of peaks in raw audio numpy arrays.
+                dim: (N, D)
+        """
+
+        N = len(X_raw)
+        # choose the number of important peaks
+        D = 3
+
+        # compute FFT to analyze frequencies
+        X_fft = self.compute_fft(X_raw, Fs, N_fft=N_fft)
+
+        # parameters for finding peaks
+        dist = 10
+        h = 50
+        prom = 1
+
+        peaks = np.zeros((N, D))
+        for i in range(N):
+            curr = X_fft[i]
+            peak_indices, _ = find_peaks(curr, distance=dist, height=h, prominence=prom)
+            # remove DC component
+            indices_over_50 = np.abs(peak_indices - 50).argmin()
+            peak_indices = peak_indices[peak_indices > indices_over_50]
+            # find three highest peaks
+            peak_indices = peak_indices[0:D-1]
+            peaks[i] = curr[peak_indices]
+
+        return peaks
 
     def compute_fft(self, X_raw, Fs, N_fft=None):
         """Computes FFT of raw audio data.
@@ -88,42 +128,6 @@ class FeatureGenerator:
         self.freq = freq
 
         return X_fft
-
-    def find_peaks(self, X_raw, Fs):
-        """
-        Args:
-            X_raw: List of raw audio data numpy arrays
-                length: N
-            Fs: sampling frequency (Hz)
-
-        Returns:
-            peaks: List of peaks in raw audio numpy arrays
-                dim: (N, D)
-        """
-        N = len(X_raw)
-        # choose the number of important peaks
-        D = 3
-
-        # compute FFT to analyze frequencies
-        X_fft = self.compute_fft(X_raw, Fs)
-
-        # parameters for finding peaks
-        dist = 10
-        h = 50
-        prom = 1
-
-        peaks = np.zeros((N, D))
-        for i in range(N):
-            curr = X_fft[i]
-            peak_indices, _ = find_peaks(curr, distance=dist, height=h, prominence=prom)
-            # remove DC component
-            indices_over_50 = np.abs(peak_indices - 50).argmin()
-            peak_indices = peak_indices[peak_indices > indices_over_50]
-            # find three highest peaks
-            peak_indices = peak_indices[0:D-1]
-            peaks[i] = curr[peak_indices]
-
-        return peaks
 
     def plot_time(self, X_raw, Fs, example, fig_num=1):
         """Plots raw audio data in time domain.

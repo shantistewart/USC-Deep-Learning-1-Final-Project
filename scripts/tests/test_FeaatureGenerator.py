@@ -10,6 +10,10 @@ from preprocessing.engineer_features import FeatureGenerator
 data_folder = "../../data/"
 
 
+# type of feature to generate:
+feature_type = "fft_peaks"
+
+
 print()
 # load data:
 data_loader = DataLoader()
@@ -18,7 +22,7 @@ Fs = data_loader.Fs
 
 # test FeatureGenerator:
 example = 20
-feature_generator = FeatureGenerator(feature_type="fft")
+feature_generator = FeatureGenerator(feature_type=feature_type)
 # plot raw audio data in time domain:
 feature_generator.plot_time(X_raw, Fs, example, fig_num=1)
 # compute and plot FFT:
