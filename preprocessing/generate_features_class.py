@@ -118,17 +118,18 @@ class FeatureGenerator:
         h = 50
         prom = 0
 
-        peaks = np.zeros((N, D))
+        peak_list = np.zeros((N, D))
         for i in range(N):
             curr = X_fft[i]
             peak_indices, _ = find_peaks(curr, distance=dist, height=h, prominence=prom)
             # remove DC component
             indices_over_50 = np.abs(peak_indices - 50).argmin()
             peak_indices = peak_indices[peak_indices > indices_over_50]
-            # find three highest peaks
+            # find D highest peaks
             peak_indices = peak_indices[0:D-1]
+            peak_list[i] = peak_indices
 
-        return peak_indices
+        return peak_list
 
     def compute_fft(self, X_raw, Fs, N_fft=None, norm=True):
         """Computes FFTs of raw audio data.
