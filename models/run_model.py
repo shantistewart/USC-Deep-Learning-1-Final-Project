@@ -53,6 +53,7 @@ def run_model(data_folder, model, test_fract, feature_type, freq_range, N_fft=No
     # load all data:
     data_loader = DataLoader(test_fract=test_fract)
     X_raw_train, y_train, X_raw_test, y_test = data_loader.load_and_split_data(data_folder)
+    Fs = data_loader.Fs
 
     # create initial ModelPipeline object:
     model_pipe = ModelPipeline(model, feature_type=feature_type, norm_type=norm_type, feature_select=feature_select,
