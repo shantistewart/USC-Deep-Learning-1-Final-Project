@@ -1,6 +1,5 @@
 """File containing class for loading data."""
 import numpy as np
-import pandas as pd
 import os
 from scipy.io.wavfile import read
 
@@ -8,6 +7,7 @@ from scipy.io.wavfile import read
 # major and minor class labels:
 MAJ = 0
 MIN = 1
+
 
 class DataLoader:
     """Class for loading and splitting data into features and labels.
@@ -30,24 +30,27 @@ class DataLoader:
                 dim: (N, n_samples)
             y: Labels.
                 dim: (N, )
+            Fs: Sampling frequency (Hz)
         """
-        X = pd.Dataframe()
-        y = pd.Dataframe()
-        for root, dirs, files in os.walk(data_folder, topdown = True):
-            # label data
-            if dirs == 'major':
-                label = MAJ
-            elif dirs == 'minor':
-                label = MIN
-            # import data
-            files = sorted(files)
-            for f in files:
-                wav_file = read(os.path.join(root, f))
-                wav_label = label
+        X = []
+        y = []
+        for root, dirs, _ in os.walk(data_folder, topdown=True):
 
-                X.append(wav_file)
-                y.append(wav_label)
+            print()
+            for d in dirs:
+                print()
+                print(d)
+                # set label
+                if d == 'major':
+                    label = MAJ
+                elif d == 'minor':
+                    label = MIN
+                path = os.path.join(root, d)
+                for _, _, files in os.walk(path, topdown=True):
+                    for f in files:
+                        Fs, audio_data = read(os.path.join(path, f))
+                        # print(audio_data.shape)
+                        X.append(audio_data)
+                        y.append(label)
 
-            return X, y
-        # return X, y
-
+            return X, y, Fs

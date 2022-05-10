@@ -9,5 +9,4 @@ data_folder = "../../data/"
 
 
 data_loader = DataLoader()
-X, y = data_loader.load_data(data_folder)
-
+X, y, Fs = data_loader.load_data(data_folder)
