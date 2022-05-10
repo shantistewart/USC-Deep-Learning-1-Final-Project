@@ -44,7 +44,8 @@ X_fft_bin = feature_generator.generate_features("fft_bins", X_raw, Fs, freq_rang
 print(X_fft_bin.shape)
 
 # test fft_peaks() method:
-# CODE HERE
+X_peaks_indices = feature_generator.generate_features("fft_peaks", X_raw, Fs, freq_range, n_peaks=5)
+print(X_peaks_indices[0])
 
 
 # show plots:

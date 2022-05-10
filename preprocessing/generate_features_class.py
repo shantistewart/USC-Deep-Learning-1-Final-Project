@@ -108,22 +108,24 @@ class FeatureGenerator:
 
         N = len(X_raw)
         # choose the number of important peaks
-        D = 15
+        D = n_peaks
 
         # compute FFT to analyze frequencies
         X_fft = self.compute_fft(X_raw, Fs, N_fft=N_fft, norm=norm)
 
         # parameters for finding peaks
         dist = 10
-        h = 50
         prom = 0
 
         peak_list = np.zeros((N, D))
         for i in range(N):
             curr = X_fft[i]
-            peak_indices, _ = find_peaks(curr, distance=dist, height=h, prominence=prom)
+            h = curr.max() * 5/100
+            peak_indices, _ = find_peaks(curr, height=h)
             # remove DC component
-            indices_over_50 = np.abs(peak_indices - 50).argmin()
+            print(peak_indices)
+            indices_over_50 = np.abs(peak_indices - 50)
+            print(indices_over_50)
             peak_indices = peak_indices[peak_indices > indices_over_50]
             # find D highest peaks
             peak_indices = peak_indices[0:D-1]
