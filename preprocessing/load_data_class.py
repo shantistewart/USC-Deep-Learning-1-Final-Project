@@ -1,5 +1,6 @@
 """File containing class for loading data."""
-import numpy as np
+
+
 import os
 from scipy.io.wavfile import read
 
@@ -32,6 +33,7 @@ class DataLoader:
                 dim: (N, )
             Fs: Sampling frequency (Hz)
         """
+
         X = []
         y = []
         for root, dirs, _ in os.walk(data_folder, topdown=True):
@@ -45,8 +47,10 @@ class DataLoader:
                 for _, _, files in os.walk(path, topdown=True):
                     for f in files:
                         Fs, audio_data = read(os.path.join(path, f))
-                        # print(audio_data.shape)
                         X.append(audio_data)
                         y.append(label)
 
+            self.N = len(y)
+
             return X, y, Fs
+
