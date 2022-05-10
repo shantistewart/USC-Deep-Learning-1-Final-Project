@@ -18,7 +18,7 @@ class DataLoader:
             data_folder: Path of data folder.
 
         Returns:
-            X: Features.
+            X: Data.
                 dim: (N, n_samples)
             y: Labels.
                 dim: (N, )
