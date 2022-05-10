@@ -108,7 +108,7 @@ class FeatureGenerator:
 
         N = len(X_raw)
         # choose the number of important peaks
-        D = 3
+        D = 15
 
         # compute FFT to analyze frequencies
         X_fft = self.compute_fft(X_raw, Fs, N_fft=N_fft, norm=norm)
@@ -116,7 +116,7 @@ class FeatureGenerator:
         # parameters for finding peaks
         dist = 10
         h = 50
-        prom = 1
+        prom = 0
 
         peaks = np.zeros((N, D))
         for i in range(N):
@@ -127,9 +127,8 @@ class FeatureGenerator:
             peak_indices = peak_indices[peak_indices > indices_over_50]
             # find three highest peaks
             peak_indices = peak_indices[0:D-1]
-            peaks[i] = curr[peak_indices]
 
-        return peaks
+        return peak_indices
 
     def compute_fft(self, X_raw, Fs, N_fft=None, norm=True):
         """Computes FFTs of raw audio data.
