@@ -14,6 +14,8 @@ from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from sklearn.utils.multiclass import unique_labels
 from sklearn.metrics import mean_absolute_error
 
+import inspect
+
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -36,10 +38,11 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
             batch_size=30
     ):
         super(MLP, self).__init__()
-        self.history = None
-        self.model = None
+
+        self._history = None
+        self._model = None
         # GPU flag
-        self.gpu = use_gpu and torch.cuda.is_available()
+        self._gpu = use_gpu and torch.cuda.is_available()
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.hidden_layer_dims = hidden_layer_dims
@@ -51,20 +54,26 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         self.hidden2 = torch.nn.Linear(10, 10)
         self.output = torch.nn.Linear(10, 2)
 
+        args, _, _, values = inspect.getargvalues(inspect.currentframe())
+        values.pop("self")
+
+        for arg, val in values.items():
+            setattr(self, arg, val)
+
     # def build_model(self):
     #     self.layer_dims = [self.input_dim] + self.hidden_layer_dims + [self.output_dim]
-    #     self.model = torch.nn.Sequential()
+    #     self._model = torch.nn.Sequential()
     #     for idx, dim in enumerate(self.layer_dims):
     #         if idx < len(self.layer_dims) - 1:
     #             module = torch.nn.Linear(dim, self.layer_dims[idx + 1])
     #             torch.nn.init.xavier_uniform_(module.weight)
-    #             self.model.add_module("linear" + str(idx), module)
+    #             self._model.add_module("linear" + str(idx), module)
     #
     #         if idx < len(self.layer_dims) - 2:
-    #             self.model.add_module("relu" + str(idx), torch.nn.ReLU())
+    #             self._model.add_module("relu" + str(idx), torch.nn.ReLU())
     #
-    #         if self.gpu:
-    #             self.model = self.model.cuda()
+    #         if self._gpu:
+    #             self._model = self._model.cuda()
 
     def forward(self, x):
         """Define forward model of MLP
@@ -91,7 +100,7 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
 
         Returns: self
         """
-        self.model = MLP()
+        self._model = MLP()
 
         # things required to be a valid sklearn classifier:
         if y is None:
@@ -107,7 +116,7 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         # train MLP:
         torch_x = torch.from_numpy(X).float()
         torch_y = torch.from_numpy(y).float()
-        if self.gpu:
+        if self._gpu:
             torch_x = torch_x.cuda()
             torch_y = torch_y.cuda()
 
@@ -116,29 +125,29 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         train_loader = torch.utils.data.DataLoader(train, batch_size=self.batch_size, shuffle=True)
 
         loss_func = torch.nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.Adam(self._model.parameters(), lr=self.learning_rate)
 
         self.history = {'accuracy':[], 'loss': []}
         for epoch in range(self.num_epochs):
             correct = 0
             for idx, (minibatch, target) in enumerate(train_loader):
-                y_pred = self.model(Variable(minibatch))
-                loss = loss_func(y_pred.float(), Variable(target.cuda().long()) if self.gpu else Variable(target.long()))
+                y_pred = self._model(Variable(minibatch))
+                loss = loss_func(y_pred.float(), Variable(target.cuda().long()) if self._gpu else Variable(target.long()))
 
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-                y_labels = target.cuda().numpy() if self.gpu else target.numpy()
-            # y_pred_results = y_pred.cuda().data.numpy() if self.gpu else y_pred.data.numpy()
+                y_labels = target.cuda().numpy() if self._gpu else target.numpy()
+            # y_pred_results = y_pred.cuda().data.numpy() if self._gpu else y_pred.data.numpy()
 
-                predictions = torch.argmax(y_pred.data, dim=1).numpy()
-                correct += (predictions == y_labels).sum()
+            predictions = torch.argmax(y_pred.data, dim=1).numpy()
+            correct += (predictions == y_labels).sum()
 
             error = mean_absolute_error(predictions, y_labels)
 
-            self.history["accuracy"].append(correct/len(train_loader))
-            self.history["loss"].append(error)
+            self._history["accuracy"].append(correct/len(train_loader))
+            self._history["loss"].append(error)
             print("Results for epoch {0}, accuracy {1}, MSE_loss {2}".format(epoch + 1,
                                                                              correct/len(train_loader), error))
 
@@ -161,7 +170,7 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         check_array(X)
 
         # make predictions:
-        self.model.eval()
+        self._model.eval()
         # determine length of each batch size
         batch_length = np.ceil(len(X) / self.batch_size)
 
@@ -169,7 +178,7 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         # split X accordingly per batch
         for batch in np.array_split(X, batch_length):
             x_pred = Variable(torch.from_numpy(batch).float())
-            y_pred = self.model(x_pred.cuda() if self.gpu else x_pred)
+            y_pred = self._model(x_pred.cuda() if self._gpu else x_pred)
 
             predictions = torch.argmax(y_pred.data, dim=1).numpy()
             results = np.append(results, predictions)
@@ -200,4 +209,4 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         accuracy = correct / N
         return accuracy
 
-# check_estimator(MLP())
+check_estimator(MLP())
