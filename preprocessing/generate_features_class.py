@@ -1,6 +1,7 @@
 """File containing class for generating features."""
 
 
+import pandas as pd
 import numpy as np
 from numpy import fft
 from scipy.stats import binned_statistic
@@ -33,7 +34,10 @@ class FeatureGenerator:
                 Fs: Sampling frequency (Hz).
                 freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for binning/peak finding.
                 n_bins: Number of bins to use in binning (ignored if feature_type != "fft_bins").
-                n_peaks: Number of peaks to find in peak finding (ignored if feature_type != "fft_peaks").
+                n_harmonics: Number of harmonics to find in harmonics estimation (ignored if
+                    feature_type != "harmonics").
+                peak_height_fract: Minimum height of FFT peaks = min_height_fract * max value of FFT.
+                peak_sep: Minimum separation (distance) between neighboring FFT peaks (in Hz).
                 N_fft: Number of FFT points to use.
                     If None, a default number of FFT points is used.
                 norm: Selects whether to normalize raw audio data.
@@ -62,11 +66,16 @@ class FeatureGenerator:
         # generate features:
         if feature_type == "harmonics":
             # extract specific feature generation parameters:
-            n_peaks = feature_gen_params.get("n_peaks")
-            if n_peaks is None:
+            n_harmonics = feature_gen_params.get("n_harmonics")
+            peak_height_fract = feature_gen_params.get("peak_height_fract")
+            peak_sep = feature_gen_params.get("peak_sep")
+            if n_harmonics is None:
                 raise Exception("Missing specific feature generation parameters.")
             # generate features:
-            X = self.harmonics(X_raw, Fs, freq_range, n_peaks, N_fft=N_fft, norm=norm)
+            X = self.harmonics(X_raw, Fs, freq_range, n_harmonics, peak_height_fract=peak_height_fract,
+                               peak_sep=peak_sep, N_fft=None, norm=True)
+            X = X.to_numpy()
+
         elif feature_type == "fft_bins":
             # extract specific feature generation parameters:
             n_bins = feature_gen_params.get("n_bins")
@@ -77,49 +86,100 @@ class FeatureGenerator:
 
         return X
 
-    def harmonics(self, X_raw, Fs, freq_range, n_peaks, N_fft=None, norm=True):
+    def harmonics(self, X_raw, Fs, freq_range, n_harmonics, peak_height_fract=0.05, peak_sep=10.0, N_fft=None,
+                  norm=True):
         """
-        Finds n_peaks largest peaks (and their locations) in FFTs of audio data.
+        Finds n_harmonics strongest harmonics of audio data.
 
         Args:
             X_raw: List of raw audio data numpy arrays.
                 length: N
             Fs: Sampling frequency (Hz).
             freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for finding peaks.
-            n_peaks: Number of peaks to find.
+            n_harmonics: Number of harmonics to find.
+            peak_height_fract: Minimum height of FFT peaks = min_height_fract * max value of FFT.
+            peak_sep: Minimum separation (distance) between neighboring FFT peaks (in Hz).
             N_fft: Number of FFT points to use.
                 If None, a default number of FFT points is used.
             norm: Selects whether to normalize raw audio data.
 
         Returns:
-            peak_freq: Frequencies (locations) of peaks of FFTs of audio data.
-                dim: (N, n_peaks)
+            harmonics: Frequencies of harmonics.
+                dim: (N, n_harmonics)
         """
 
+        # set default values to certain parameters, if they are None:
+        if peak_height_fract is None:
+            peak_height_fract = 0.05
+        if peak_sep is None:
+            peak_sep = 10.0
         N = len(X_raw)
-        # choose the number of important peaks
-        D = n_peaks
 
-        # compute FFT to analyze frequencies
+        # compute FFTs of audio data:
         X_fft = self.compute_fft(X_raw, Fs, N_fft=N_fft, norm=norm)
 
-        # parameters for finding peaks
-        dist = 10
-        prom = 0
+        # convert freq_range and peak_sep from Hz to samples:
+        freq_space = self.freq[1] - self.freq[0]
+        peak_sep_samples = int(np.round(peak_sep / freq_space))
 
-        peak_list = np.zeros((N, D))
+        # estimate harmonics by finding largest peaks of FFTs:
+        harmonics_data = []
         for i in range(N):
-            curr = X_fft[i]
-            h = curr.max() * 5/100
-            peak_indices, _ = find_peaks(curr, height=h)
-            # remove DC component
-            indices_over_50 = np.abs(peak_indices - 50)
-            peak_indices = peak_indices[peak_indices > indices_over_50]
-            # find D highest peaks
-            peak_indices = peak_indices[0:D]
-            peak_list[i] = self.freq[peak_indices]
+            # minimum peak height:
+            peak_height = peak_height_fract * np.amax(X_fft[i])
+            # find locations (sample indices) of peaks:
+            peak_inds_all, peak_properties = find_peaks(X_fft[i], height=peak_height, distance=peak_sep_samples)
+            # convert to Hz:
+            peaks_all = self.freq[peak_inds_all]
 
-        return peak_list
+            # only keep peaks in specified frequency range:
+            peaks = []
+            peak_heights = []
+            for k in range(len(peaks_all)):
+                peak = peaks_all[k]
+                if freq_range[0] <= peak <= freq_range[1]:
+                    peaks.append(peak)
+                    peak_heights.append(peak_properties["peak_heights"][k])
+            peaks = np.array(peaks)
+            peak_heights = np.array(peak_heights)
+
+            # keep only first n_harmonics highest peaks:
+            n_peaks = len(peaks)
+            if n_peaks > n_harmonics:
+                # sort peaks in descending order of height:
+                peak_sort_inds = np.flip(np.argsort(peak_heights))
+                peaks_sort = peaks[peak_sort_inds]
+                # keep only first n_harmonics peaks:
+                peaks = peaks_sort[0:n_harmonics]
+                # "unsort" resulting peaks:
+                peaks = np.sort(peaks)
+            n_peaks = len(peaks)
+
+            # save peaks:
+            harmonics_data.append(list(peaks))
+
+        # construct dataframe:
+        cols = []
+        for h in range(n_harmonics):
+            cols.append("Harmonic " + str(h+1))
+        harmonics_df = pd.DataFrame(harmonics_data, columns=cols)
+        # impute missing values with feature mean:
+        miss_vals_series = harmonics_df.isnull().sum()
+        miss_vals_series = miss_vals_series[miss_vals_series > 0]
+        miss_vals_cols = list(miss_vals_series.index)
+
+        """
+        # TEMP:
+        print()
+        print(harmonics_df["# of Harmonics"].describe())
+        print("\nNumbers of Missing values:")
+        print(miss_vals_series)
+        """
+
+        for col in miss_vals_cols:
+            harmonics_df[col] = harmonics_df[col].fillna(value=harmonics_df[col].mean())
+
+        return harmonics_df
 
     def fft_bins(self, X_raw, Fs, freq_range, n_bins, N_fft=None, norm=True):
         """Computes binned FFTs of audio data.
