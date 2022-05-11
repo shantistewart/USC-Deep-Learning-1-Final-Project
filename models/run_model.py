@@ -74,27 +74,30 @@ def run_model(data_folder, model, test_fract, feature_type, feature_gen_params, 
     # evaluate model on training set:
     if verbose != 0:
         print("\nEvaluating model on training set...")
-    # FILL IN LATER:
-    pass
+    train_metrics = model_pipe.eval("train", X_raw_train, y_train, feature_gen_params, n_folds=n_folds, verbose=verbose)
 
     # evaluate model using cross validation:
     if verbose != 0:
         print("\nEvaluating model using cross validation...")
-    # FILL IN LATER:
-    pass
+    val_metrics = model_pipe.eval("cross_val", X_raw_train, y_train, feature_gen_params, n_folds=n_folds,
+                                  verbose=verbose)
 
     # evaluate model on test set, if selected:
     if final_eval:
         if verbose != 0:
             print("\nEvaluating model on test set...")
-        # FILL IN LATER:
-        pass
+        # first, (re)train model on full training set (since cross validation alters the sklearn Pipeline object):
+        model_pipe.train(X_raw_train, y_train, feature_gen_params)
+        test_metrics = model_pipe.eval("test", X_raw_train, y_train, feature_gen_params, n_folds=n_folds,
+                                       verbose=verbose)
     if verbose != 0:
         print("")
 
     # save training/cross-validation/test set metrics to nested dictionary:
-    # FILL IN LATER:
-    pass
+    metrics["train"] = train_metrics
+    metrics["val"] = val_metrics
+    if final_eval:
+        metrics["test"] = test_metrics
 
     return metrics, best_models
 

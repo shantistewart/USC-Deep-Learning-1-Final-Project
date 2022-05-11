@@ -80,6 +80,63 @@ class ModelPipeline:
 
         # train model:
         self.model_pipe.fit(X_train, y_train)
+    
+    def eval(self, eval_type, X_raw, y, feature_gen_params, n_folds=5, verbose=1):
+        """Evaluates model on data.
+
+        Args:
+            eval_type: Type of evaluation to run.
+                allowed values: "train", "cross_val", "test"
+            X_raw: List of raw audio data numpy arrays.
+                length: N
+            y: Labels.
+                dim: (N, )
+            feature_gen_params: Dictionary of parameters for feature generation.
+            n_folds: Number of folds (K) to use in stratified K-fold cross validation (ignored if eval_type !=
+                "cross_val").
+            verbose: Nothing printed (0), accuracy and F1-score printed (1), all metrics printed (2).
+
+        Returns:
+            metrics: Dictionary of performance metrics.
+                metrics["accuracy"] = accuracy
+                metrics["f1"] = F1-score
+                metrics["conf_matrix"] = confusion matrix
+        """
+
+        # validate evaluation type:
+        if eval_type != "train" and eval_type != "cross_val" and eval_type != "test":
+            raise Exception("Invalid evaluation type.")
+
+        # generate features:
+        X = self.feature_gen.generate_features(self.feature_type, X_raw, feature_gen_params)
+
+        # perform cross validation if selected:
+        if eval_type == "cross_val":
+            scores = cross_validate(self.model_pipe, X, y, cv=n_folds, scoring=["accuracy", "f1"])
+            accuracy = np.mean(scores["test_accuracy"])
+            f1 = np.mean(scores["test_f1"])
+        # otherwise, evaluate directly on provided dataset:
+        else:
+            # predict on data:
+            y_pred = self.model_pipe.predict(X)
+            # compute metrics (accuracy, F1-score, confusion matrix):
+            accuracy = accuracy_score(y, y_pred)
+            f1 = f1_score(y, y_pred)
+            conf_matrix = confusion_matrix(y, y_pred, normalize=None)
+        # print metrics:
+        if verbose != 0:
+            print("accuracy = {} %".format(100*accuracy))
+            print("F1-score = {}".format(f1))
+        if eval_type != "cross_val" and verbose == 2:
+            print("confusion matrix = \n{}".format(conf_matrix))
+
+        # save metrics to dictionary:
+        metrics = {"accuracy": accuracy,
+                   "f1": f1}
+        if eval_type != "cross_val":
+            metrics["conf_matrix"] = conf_matrix
+
+        return metrics
 
     def make_pipeline(self, model):
         """Creates a sklearn Pipeline object for model.
