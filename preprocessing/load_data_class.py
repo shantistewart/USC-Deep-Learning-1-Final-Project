@@ -2,6 +2,7 @@
 
 
 import os
+import numpy as np
 from scipy.io.wavfile import read
 from sklearn.model_selection import train_test_split
 
@@ -39,15 +40,16 @@ class DataLoader:
             X_train: Training audio data.
                 length: N_train
             y_train: Training labels.
-                length: N_train
+                dim: (N_train, )
             X_test: Test audio data.
                 length: N_test
-            y_test: Test abels.
-                length: N_train
+            y_test: Test labels.
+                dim: (N_test, )
         """
 
         # load data and labels:
         X, y, _ = self.load_data(data_folder)
+        y = np.array(y, dtype=int)
 
         # split into training/test sets:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=self.test_fract, random_state=24)
