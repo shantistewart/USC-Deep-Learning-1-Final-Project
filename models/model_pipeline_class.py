@@ -16,7 +16,7 @@ class ModelPipeline:
 
     Attributes:
         feature_type: Type of feature to generate.
-            allowed values: "fft_bins", "fft_peaks"
+            allowed values: "harmonics", "fft_bins"
         feature_gen: FeatureGenerator object
         norm_type: Type of feature normalization to use.
             allowed values: "standard", None
@@ -34,7 +34,7 @@ class ModelPipeline:
         Args:
             model: sklearn model (estimator) object.
             feature_type: Type of feature to generate.
-                allowed values: "fft_bins", "fft_peaks"
+                allowed values: "harmonics", "fft_bins"
             norm_type: Type of normalization to use.
                 allowed values: "standard", None
             feature_select: Method of feature selection.

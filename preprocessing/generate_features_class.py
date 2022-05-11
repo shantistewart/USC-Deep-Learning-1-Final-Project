@@ -26,7 +26,7 @@ class FeatureGenerator:
 
         Args:
             feature_type: Type of feature to generate.
-                allowed values: "fft_bins", "fft_peaks"
+                allowed values: "harmonics", "fft_bins"
             X_raw: List of raw audio data numpy arrays.
                 length: N
             feature_gen_params: Dictionary of parameters for feature generation, with keys/values:
@@ -45,7 +45,7 @@ class FeatureGenerator:
         """
 
         # validate feature type:
-        if feature_type != "fft_bins" and feature_type != "fft_peaks":
+        if feature_type != "harmonics" and feature_type != "fft_bins":
             raise Exception("Invalid feature type.")
 
         # extract general feature generation parameters:
@@ -60,7 +60,14 @@ class FeatureGenerator:
             norm = True
 
         # generate features:
-        if feature_type == "fft_bins":
+        if feature_type == "harmonics":
+            # extract specific feature generation parameters:
+            n_peaks = feature_gen_params.get("n_peaks")
+            if n_peaks is None:
+                raise Exception("Missing specific feature generation parameters.")
+            # generate features:
+            X = self.harmonics(X_raw, Fs, freq_range, n_peaks, N_fft=N_fft, norm=norm)
+        elif feature_type == "fft_bins":
             # extract specific feature generation parameters:
             n_bins = feature_gen_params.get("n_bins")
             if n_bins is None:
@@ -68,46 +75,9 @@ class FeatureGenerator:
             # generate features:
             X, _ = self.fft_bins(X_raw, Fs, freq_range, n_bins, N_fft=N_fft, norm=norm)
 
-        elif feature_type == "fft_peaks":
-            # extract specific feature generation parameters:
-            n_peaks = feature_gen_params.get("n_peaks")
-            if n_peaks is None:
-                raise Exception("Missing specific feature generation parameters.")
-            # generate features:
-            X = self.fft_peaks(X_raw, Fs, freq_range, n_peaks, N_fft=N_fft, norm=norm)
-
         return X
 
-    def fft_bins(self, X_raw, Fs, freq_range, n_bins, N_fft=None, norm=True):
-        """Computes binned FFTs of audio data.
-
-        Args:
-            X_raw: List of raw audio data numpy arrays.
-                length: N
-            Fs: Sampling frequency (Hz).
-            freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for binning.
-            n_bins: Number of bins to use.
-            N_fft: Number of FFT points to use.
-                If None, a default number of FFT points is used.
-            norm: Selects whether to normalize raw audio data.
-
-        Returns:
-            X_fft_bin: Binned FFTs of audio data.
-                dim: (N, n_bins)
-            bin_edges: Edges of frequency bins (Hz).
-                dim: (n_bins+1, )
-        """
-
-        # compute FFTs of audio data:
-        X_fft = self.compute_fft(X_raw, Fs, N_fft=N_fft, norm=norm)
-
-        # compute binned means of FFTs:
-        X_fft_bin, bin_edges, bin_indices = binned_statistic(self.freq, X_fft, statistic="mean", bins=n_bins,
-                                                             range=freq_range)
-
-        return X_fft_bin, bin_edges
-
-    def fft_peaks(self, X_raw, Fs, freq_range, n_peaks, N_fft=None, norm=True):
+    def harmonics(self, X_raw, Fs, freq_range, n_peaks, N_fft=None, norm=True):
         """
         Finds n_peaks largest peaks (and their locations) in FFTs of audio data.
 
@@ -150,6 +120,35 @@ class FeatureGenerator:
             peak_list[i] = self.freq[peak_indices]
 
         return peak_list
+
+    def fft_bins(self, X_raw, Fs, freq_range, n_bins, N_fft=None, norm=True):
+        """Computes binned FFTs of audio data.
+
+        Args:
+            X_raw: List of raw audio data numpy arrays.
+                length: N
+            Fs: Sampling frequency (Hz).
+            freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for binning.
+            n_bins: Number of bins to use.
+            N_fft: Number of FFT points to use.
+                If None, a default number of FFT points is used.
+            norm: Selects whether to normalize raw audio data.
+
+        Returns:
+            X_fft_bin: Binned FFTs of audio data.
+                dim: (N, n_bins)
+            bin_edges: Edges of frequency bins (Hz).
+                dim: (n_bins+1, )
+        """
+
+        # compute FFTs of audio data:
+        X_fft = self.compute_fft(X_raw, Fs, N_fft=N_fft, norm=norm)
+
+        # compute binned means of FFTs:
+        X_fft_bin, bin_edges, bin_indices = binned_statistic(self.freq, X_fft, statistic="mean", bins=n_bins,
+                                                             range=freq_range)
+
+        return X_fft_bin, bin_edges
 
     def compute_fft(self, X_raw, Fs, N_fft=None, norm=True):
         """Computes FFTs of raw audio data.

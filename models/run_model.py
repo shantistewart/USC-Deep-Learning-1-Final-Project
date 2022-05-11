@@ -15,7 +15,7 @@ def run_model(data_folder, model, test_fract, feature_type, feature_gen_params, 
         model: sklearn model (estimator) object, with some initial hyperparameters.
         test_fract: Fraction of total data to use for test set.
         feature_type: Type of feature to generate.
-            allowed values: "fft_bins", "fft_peaks"
+            allowed values: "harmonics", "fft_bins"
         feature_gen_params: Dictionary of parameters for feature generation.
         norm_type: Type of feature normalization to use.
             allowed values: "standard", None

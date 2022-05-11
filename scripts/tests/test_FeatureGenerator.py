@@ -50,7 +50,7 @@ feature_gen_params = {
 X_fft_bin = feature_generator.generate_features("fft_bins", X_raw, feature_gen_params)
 print(X_fft_bin.shape)
 
-# test fft_peaks() method:
+# test harmonics() method:
 freq_range = (55.0, 1760.0)
 n_peaks = 10
 feature_gen_params = {
@@ -60,7 +60,7 @@ feature_gen_params = {
     "N_fft": N_fft,
     "norm": True
 }
-X_peaks_indices = feature_generator.generate_features("fft_peaks", X_raw, feature_gen_params)
+X_peaks_indices = feature_generator.generate_features("harmonics", X_raw, feature_gen_params)
 print()
 print(X_peaks_indices[example])
 curr = X_peaks_indices[example]
