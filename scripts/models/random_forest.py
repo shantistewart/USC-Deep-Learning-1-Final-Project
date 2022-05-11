@@ -15,7 +15,6 @@ print()
 model = RandomForestClassifier()
 # fraction of total data to use for test set:
 test_fract = 0.2
-
 # feature generation parameters:
 feature_type = "harmonics"
 freq_range = (55.0, 1760.0)
