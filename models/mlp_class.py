@@ -1,47 +1,72 @@
 """File containing class for MLP model."""
 
-import numpy as np
-import torch
-from torch.autograd import Variable
-from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
-from sklearn.utils.multiclass import unique_labels
 import os
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
+import numpy as np
+import torch
+import torch.nn.functional as F
+from torch.autograd import Variable
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from sklearn.utils.multiclass import unique_labels
+
+
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 
-class MLP(ClassifierMixin, BaseEstimator):
+class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
     """MLP class.
 
     Attributes:
         Other attributes required to be a valid sklearn classifier.
     """
 
-    def __init__(self, use_gpu=False, output_dim=1, input_dim=100, hidden_layer_dims=[100, 100],
-                 learning_rate=0.01, num_epochs=30):
+    def __init__(self, use_gpu=False, output_dim=2, input_dim=50715, hidden_layer_dims=[100, 100],
+                 learning_rate=0.01, num_epochs=30, batch_size=30):
+        super(MLP, self).__init__()
         self.history = None
         self.model = None
         # GPU flag
-        self._gpu = use_gpu and torch.cuda.is_available()
-        #pass
+        self.gpu = use_gpu and torch.cuda.is_available()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.hidden_layer_dims = hidden_layer_dims
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
+        # define forward model
+        self.hidden = torch.nn.Linear(input_dim, 10)
+        self.output = torch.nn.Linear(10, 2)
 
-    def build_model(self):
-        self.layer_dims = [self.n_features_in] + self.hidden_layer_dims + self.output_dim
-        self.model = torch.nn.Sequential()
-        for idx, dim in enumerate(self.layer_dims):
-            if idx < len(self.layer_dims) - 1:
-                module = torch.nn.Linear(dim, self.layer_dims[idx + 1])
-                torch.nn.init.xavier_uniform(module.weight)
-                self.model.add_module("linear" + str(idx), module)
+    # def build_model(self):
+    #     self.layer_dims = [self.input_dim] + self.hidden_layer_dims + [self.output_dim]
+    #     self.model = torch.nn.Sequential()
+    #     for idx, dim in enumerate(self.layer_dims):
+    #         if idx < len(self.layer_dims) - 1:
+    #             module = torch.nn.Linear(dim, self.layer_dims[idx + 1])
+    #             torch.nn.init.xavier_uniform_(module.weight)
+    #             self.model.add_module("linear" + str(idx), module)
+    #
+    #         if idx < len(self.layer_dims) - 2:
+    #             self.model.add_module("relu" + str(idx), torch.nn.ReLU())
+    #
+    #         if self.gpu:
+    #             self.model = self.model.cuda()
 
-            if idx < len(self.layer_dims) - 2:
-                self.model.add_module("relu" + str(idx), torch.nn.ReLU())
+    def forward(self, x):
+        """Define forward model of MLP
 
-            if self.gpu:
-                self.model = self.model.cuda()
+        Args:
+            x:
+
+        Returns:
+
+        """
+        x = F.relu(self.hidden(x))
+        x = F.softmax(self.output(x), dim=1)
+        return x
 
     def fit(self, X, y, **kwargs):
         """Trains MLP.
@@ -54,6 +79,7 @@ class MLP(ClassifierMixin, BaseEstimator):
 
         Returns: self
         """
+        self.model = MLP()
 
         # things required to be a valid sklearn classifier:
         if y is None:
@@ -67,15 +93,13 @@ class MLP(ClassifierMixin, BaseEstimator):
         self.is_fitted_ = True
 
         # train MLP:
-        self.build_model()
-
-        torch_x = torch.from_numpy(self.X).float()
-        torch_y = torch.from_numpy(self.y).float()
+        torch_x = torch.from_numpy(X).float()
+        torch_y = torch.from_numpy(y).float()
         if self.gpu:
             torch_x = torch_x.cuda()
             torch_y = torch_y.cuda()
 
-        train = torch.utils.data.DataLoader(torch_x, torch_y)
+        train = torch.utils.data.TensorDataset(torch_x, torch_y)
         # not shuffling data here
         train_loader = torch.utils.data.DataLoader(train, batch_size=self.batch_size)
 
@@ -87,7 +111,7 @@ class MLP(ClassifierMixin, BaseEstimator):
             correct = 0
             for idx, (minibatch, target) in enumerate(train_loader):
                 y_pred = self.model(Variable(minibatch))
-                loss = loss_func(y_pred, Variable(target.cuda().float()) if self.gpu else target.float())
+                loss = loss_func(y_pred.float(), Variable(target.cuda().long()) if self.gpu else Variable(target.long()))
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -96,8 +120,8 @@ class MLP(ClassifierMixin, BaseEstimator):
                 y_labels = target.cuda().numpy() if self.gpu else target.numpy()
                 y_pred_results = y_pred.cuda().data.numpy() if self.gpu else y_pred.data.numpy()
 
-                predictions = torch.max(y_pred_results, 1)[1]
-                correct += (predictions == y_labels).sum().numpy()
+                predictions = torch.argmax(y_pred, dim=1).numpy()
+                correct += (predictions == y_labels).sum()
                 self.history.append(correct/len(train_loader))
         return self
 

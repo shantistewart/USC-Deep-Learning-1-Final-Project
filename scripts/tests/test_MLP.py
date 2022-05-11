@@ -3,6 +3,7 @@
 # path to data folder:
 data_folder = "../../data/"
 
+import numpy as np
 import matplotlib.pyplot as plt
 from models.mlp_class import MLP
 from preprocessing.load_data_class import DataLoader
@@ -30,7 +31,8 @@ for i in peaks[example]:
     plt.axvline(x=i, color='red')
 
 # now that FFT peaks works properly, test MLP
-print('before')
-N = len(X_train_fft)
-net = MLP(input_dim=N, hidden_layer_dims=[5, 5])
-print('test')
+N = X_train_fft.shape[1]
+net = MLP(input_dim=N, output_dim=2, hidden_layer_dims=[5, 5])
+
+net.fit(X_train_fft, y_train)
+# net.predict(X_test, y_test)
