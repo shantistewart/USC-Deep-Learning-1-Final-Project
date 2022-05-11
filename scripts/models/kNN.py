@@ -34,7 +34,7 @@ n_folds = 5
 
 # hyperparameter search method and scoring metric:
 search_type = "grid"
-metric = "accuracy"
+metric = "f1"
 # hyperparameter values to search over:
 # type of weight function for KNN:
 weight_types = ["uniform", "distance"]
