@@ -106,7 +106,7 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         loss_func = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
-        self.history = []
+        self.history = {'accuracy':[], 'loss': []}
         for epoch in range(self.num_epochs):
             correct = 0
             for idx, (minibatch, target) in enumerate(train_loader):
@@ -118,11 +118,15 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
                 optimizer.step()
 
                 y_labels = target.cuda().numpy() if self.gpu else target.numpy()
-                y_pred_results = y_pred.cuda().data.numpy() if self.gpu else y_pred.data.numpy()
+            # y_pred_results = y_pred.cuda().data.numpy() if self.gpu else y_pred.data.numpy()
 
                 predictions = torch.argmax(y_pred, dim=1).numpy()
                 correct += (predictions == y_labels).sum()
-                self.history.append(correct/len(train_loader))
+            self.history["accuracy"].append(correct/len(train_loader))
+            self.history["loss"].append(loss.item())
+            print("Results for epoch {}, accuracy {}, CE_loss {}".format(epoch + 1,
+                                                                          correct/len(train_loader), loss.item()))
+
         return self
 
     def predict(self, X):

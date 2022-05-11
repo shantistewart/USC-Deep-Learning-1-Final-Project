@@ -20,15 +20,17 @@ Fs = data_loader.Fs
 feature_gen = FeatureGenerator()
 freq_range = (50.0, 1000.0)
 X_train_fft = feature_gen.compute_fft(X_train, Fs)
-peaks = feature_gen.generate_features('fft_peaks', X_train, Fs, freq_range, n_peaks=5)
+# feature_gen_params = {
+#     "Fs": Fs,
+#     "freq_range": freq_range,
+#     "n_peaks": n_peaks,
+#     "N_fft": N_fft,
+#     "norm": True
+# }
+# peaks = feature_gen.generate_features('fft_peaks', X_train, feature_gen_params)
 
 # select which chord to look at
 example = 5
-
-plt.figure(1)
-plt.plot(X_train_fft[example])
-for i in peaks[example]:
-    plt.axvline(x=i, color='red')
 
 # now that FFT peaks works properly, test MLP
 N = X_train_fft.shape[1]
