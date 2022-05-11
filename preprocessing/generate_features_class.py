@@ -13,7 +13,7 @@ class FeatureGenerator:
 
     Attributes:
         Fs: Sampling frequency (Hz).
-        freq: Corresponding frequencies:
+        freq: Frequencies of FFTs.
             dim: (D, N_fft/2)
     """
 
@@ -21,7 +21,7 @@ class FeatureGenerator:
         self.Fs = None
         self.freq = None
 
-    def generate_features(self, feature_type, X_raw, Fs, freq_range, N_fft=None, norm=True, n_bins=None, n_peaks=None):
+    def generate_features(self, feature_type, X_raw, feature_gen_params):
         """Generates features from audio data.
 
         Args:
@@ -29,13 +29,15 @@ class FeatureGenerator:
                 allowed values: "fft_bins", "fft_peaks"
             X_raw: List of raw audio data numpy arrays.
                 length: N
-            Fs: Sampling frequency (Hz).
-            freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for binning/peak finding.
-            N_fft: Number of FFT points to use.
-                If None, a default number of FFT points is used.
-            norm: Selects whether to normalize raw audio data.
-            n_bins: Number of bins to use in binning (ignored if feature_type != "fft_bins").
-            n_peaks: Number of peaks to find in peak finding (ignored if feature_type != "fft_peaks").
+            feature_gen_params: Dictionary of parameters for feature generation, with keys/values:
+                Fs: Sampling frequency (Hz).
+                freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for binning/peak finding.
+                n_bins: Number of bins to use in binning (ignored if feature_type != "fft_bins").
+                n_peaks: Number of peaks to find in peak finding (ignored if feature_type != "fft_peaks").
+                N_fft: Number of FFT points to use.
+                    If None, a default number of FFT points is used.
+                norm: Selects whether to normalize raw audio data.
+                    If None, set to True.
 
         Returns:
             X: Generated features.
@@ -46,14 +48,32 @@ class FeatureGenerator:
         if feature_type != "fft_bins" and feature_type != "fft_peaks":
             raise Exception("Invalid feature type.")
 
+        # extract general feature generation parameters:
+        Fs = feature_gen_params.get("Fs")
+        freq_range = feature_gen_params.get("freq_range")
+        N_fft = feature_gen_params.get("N_fft")
+        norm = feature_gen_params.get("norm")
+        if Fs is None or freq_range is None:
+            raise Exception("Missing general feature generation parameters.")
+        # set default value for norm parameter:
+        if norm is None:
+            norm = True
+
         # generate features:
         if feature_type == "fft_bins":
+            # extract specific feature generation parameters:
+            n_bins = feature_gen_params.get("n_bins")
             if n_bins is None:
-                raise Exception("n_bins parameter is None.")
-            X, _ = self.fft_bins(X_raw, Fs, freq_range, n_bins, N_fft=None, norm=norm)
+                raise Exception("Missing specific feature generation parameters.")
+            # generate features:
+            X, _ = self.fft_bins(X_raw, Fs, freq_range, n_bins, N_fft=N_fft, norm=norm)
+
         elif feature_type == "fft_peaks":
+            # extract specific feature generation parameters:
+            n_peaks = feature_gen_params.get("n_peaks")
             if n_peaks is None:
-                raise Exception("n_peaks parameter is None.")
+                raise Exception("Missing specific feature generation parameters.")
+            # generate features:
             X = self.fft_peaks(X_raw, Fs, freq_range, n_peaks, N_fft=N_fft, norm=norm)
 
         return X

@@ -19,7 +19,7 @@ class ModelPipeline:
         feature_type: Type of feature to generate.
             allowed values: "fft_bins", "fft_peaks"
         feature_gen: FeatureGenerator object
-        norm_type: Type of normalization to use.
+        norm_type: Type of feature normalization to use.
             allowed values: "standard", None
         feature_select: Method of feature selection.
             allowed values: "KBest", "SFS", None
@@ -62,7 +62,7 @@ class ModelPipeline:
         self.model_pipe = None
         self.make_pipeline(model)
 
-    def train(self, X_raw_train, y_train, Fs, freq_range, N_fft=None, norm=True, n_bins=None, n_peaks=None):
+    def train(self, X_raw_train, y_train, feature_gen_params):
         """Trains model.
 
         Args:
@@ -70,19 +70,13 @@ class ModelPipeline:
                 length: N
             y_train: Labels (of training set).
                 dim: (N, )
-            Fs: Sampling frequency (Hz).
-            freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for binning/peak finding.
-            N_fft: Number of FFT points to use.
-            norm: Selects whether to normalize raw audio data.
-            n_bins: Number of bins to use in binning (ignored if self.feature_type != "fft_bins").
-            n_peaks: Number of peaks to find in peak finding (ignored if self.feature_type != "fft_peaks").
+            feature_gen_params: Dictionary of parameters for feature generation.
 
         Returns: None
         """
 
         # generate features:
-        X_train = self.feature_gen.generate_features(self.feature_type, X_raw_train, Fs, freq_range, N_fft=N_fft,
-                                                     norm=norm, n_bins=n_bins, n_peaks=n_peaks)
+        X_train = self.feature_gen.generate_features(self.feature_type, X_raw_train, feature_gen_params)
 
         # train model:
         self.model_pipe.fit(X_train, y_train)

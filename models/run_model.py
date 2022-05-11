@@ -5,9 +5,9 @@ from preprocessing.load_data_class import DataLoader
 from models.model_pipeline_class import ModelPipeline
 
 
-def run_model(data_folder, model, test_fract, feature_type, freq_range, N_fft=None, norm=True, n_bins=None,
-              n_peaks=None, norm_type=None, feature_select=None, pca=False, tune_model=True, hyperparams=None,
-              search_type="grid", metric="accuracy", n_iters=None, n_folds=5, final_eval=False, verbose=1):
+def run_model(data_folder, model, test_fract, feature_type, feature_gen_params, norm_type=None, feature_select=None,
+              pca=False, tune_model=True, hyperparams=None, search_type="grid", metric="accuracy", n_iters=None,
+              n_folds=5, final_eval=False, verbose=1):
     """Trains, tunes, and evaluates model.
 
     Args:
@@ -16,12 +16,8 @@ def run_model(data_folder, model, test_fract, feature_type, freq_range, N_fft=No
         test_fract: Fraction of total data to use for test set.
         feature_type: Type of feature to generate.
             allowed values: "fft_bins", "fft_peaks"
-        freq_range: (min_freq, max_freq) (in Hz) range of frequencies to include for binning/peak finding.
-        N_fft: Number of FFT points to use.
-        norm: Selects whether to normalize raw audio data.
-        n_bins: Number of bins to use in binning (ignored if feature_type != "fft_bins").
-        n_peaks: Number of peaks to find in peak finding (ignored if feature_type != "fft_peaks").
-        norm_type: Type of normalization to use.
+        feature_gen_params: Dictionary of parameters for feature generation.
+        norm_type: Type of feature normalization to use.
             allowed values: "standard", None
         feature_select: Method of feature selection.
             allowed values: "KBest", "SFS", None
@@ -54,6 +50,7 @@ def run_model(data_folder, model, test_fract, feature_type, freq_range, N_fft=No
     data_loader = DataLoader(test_fract=test_fract)
     X_raw_train, y_train, X_raw_test, y_test = data_loader.load_and_split_data(data_folder)
     Fs = data_loader.Fs
+    feature_gen_params["Fs"] = Fs
 
     # create initial ModelPipeline object:
     model_pipe = ModelPipeline(model, feature_type=feature_type, norm_type=norm_type, feature_select=feature_select,
@@ -64,7 +61,7 @@ def run_model(data_folder, model, test_fract, feature_type, freq_range, N_fft=No
     if not tune_model:
         if verbose != 0:
             print("Training model...")
-        model_pipe.train(X_raw_train, y_train, Fs, freq_range, N_fft=N_fft, norm=norm, n_bins=n_bins, n_peaks=n_peaks)
+        model_pipe.train(X_raw_train, y_train, feature_gen_params)
     # otherwise, tune hyperparameters:
     else:
         if verbose != 0:

@@ -38,18 +38,35 @@ X_fft = feature_generator.compute_fft(X_raw, Fs, N_fft=N_fft, norm=True)
 feature_generator.plot_fft(X_fft, example, max_freq=max_freq, fig_num=2)
 
 # test fft_bins() method:
-freq_range = (50.0, 1000.0)
+freq_range = (55.0, 1760.0)
 n_bins = 19
-X_fft_bin = feature_generator.generate_features("fft_bins", X_raw, Fs, freq_range, N_fft=N_fft, norm=True, n_bins=n_bins)
+feature_gen_params = {
+    "Fs": Fs,
+    "freq_range": freq_range,
+    "n_bins": n_bins,
+    "N_fft": N_fft,
+    "norm": True
+}
+X_fft_bin = feature_generator.generate_features("fft_bins", X_raw, feature_gen_params)
 print(X_fft_bin.shape)
 
 # test fft_peaks() method:
-X_peaks_indices = feature_generator.generate_features("fft_peaks", X_raw, Fs, freq_range, n_peaks=5)
+freq_range = (55.0, 1760.0)
+n_peaks = 10
+feature_gen_params = {
+    "Fs": Fs,
+    "freq_range": freq_range,
+    "n_peaks": n_peaks,
+    "N_fft": N_fft,
+    "norm": True
+}
+X_peaks_indices = feature_generator.generate_features("fft_peaks", X_raw, feature_gen_params)
+print()
 print(X_peaks_indices[example])
-
 curr = X_peaks_indices[example]
 for i in curr:
     plt.axvline(x=i, color='red')
+
 
 # show plots:
 plt.show()
