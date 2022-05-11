@@ -150,6 +150,7 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         check_array(X)
 
         # make predictions:
+        self.model.eval()
         # determine length of each batch size
         batch_length = np.ceil(len(X) / self.batch_size)
 
@@ -157,8 +158,10 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         # split X accordingly per batch
         for batch in np.array_split(X, batch_length):
             x_pred = Variable(torch.from_numpy(batch).float())
-            y_pred = self.model(x_pred.cuda() if self._gpu else x_pred)
-            results.append(y_pred)
+            y_pred = self.model(x_pred.cuda() if self.gpu else x_pred)
+
+            predictions = torch.argmax(y_pred.data, dim=1).numpy()
+            results = np.append(results, predictions.flatten())
 
         return results
 
@@ -177,12 +180,12 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         # Run prediction model
         y_pred = self.predict(X)
         N = len(y)
+        y = np.array(y)
         # total number of correct labels
-        correct = 0
-        for i in range(N):
-            correct += (y_pred[i] == y[i]).sum().numpy()
+        correct = (y_pred == y).sum()
 
         # return accuracy score
         accuracy = correct / N
+        print(accuracy)
         return accuracy
 
