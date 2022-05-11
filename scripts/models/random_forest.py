@@ -11,7 +11,7 @@ data_folder = "../../data/"
 
 
 print()
-# create K-nearest neighbors classifier:
+# create random forest classifier:
 model = RandomForestClassifier()
 # fraction of total data to use for test set:
 test_fract = 0.2
