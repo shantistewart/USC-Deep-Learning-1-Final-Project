@@ -16,29 +16,30 @@ data_loader = DataLoader()
 X_train, y_train, X_test, y_test = data_loader.load_and_split_data(data_folder)
 Fs = data_loader.Fs
 
-# turn to frequency domain with FeatureGenerator
+# pass fft_bins into MLP model
 feature_gen = FeatureGenerator()
-freq_range = (50.0, 1000.0)
-X_train_fft = feature_gen.compute_fft(X_train, Fs)
-# feature_gen_params = {
-#     "Fs": Fs,
-#     "freq_range": freq_range,
-#     "n_peaks": n_peaks,
-#     "N_fft": N_fft,
-#     "norm": True
-# }
-# peaks = feature_gen.generate_features('fft_peaks', X_train, feature_gen_params)
-
-# select which chord to look at
-example = 5
+freq_range = (55.0, 1760.0)
+n_bins = 100
+N_fft = np.power(2, 16)
+feature_gen_params = {
+    "Fs": Fs,
+    "freq_range": freq_range,
+    "n_bins": n_bins,
+    "N_fft": N_fft,
+    "norm": True
+}
+X_fft_bin_train = feature_gen.generate_features("fft_bins", X_train, feature_gen_params)
+print(X_fft_bin_train.shape)
 
 # now that FFT peaks works properly, test MLP
-N = X_train_fft.shape[1]
-net = MLP(input_dim=N, output_dim=2, hidden_layer_dims=[5, 5], num_epochs=10)
+N = X_fft_bin_train.shape[1]
+net = MLP(input_dim=N, output_dim=2, hidden_layer_dims=(5, 5), num_epochs=50)
 
-net.fit(X_train_fft, y_train)
-X_test_fft = feature_gen.compute_fft(X_test, Fs)
-net.score(X_test_fft, y_test)
+net.fit(X_fft_bin_train, y_train)
+X_fft_bin_test = feature_gen.generate_features("fft_bins", X_test, feature_gen_params)
+valid_acc = net.score(X_fft_bin_test, y_test)
+print()
+print(valid_acc)
 
 acc = net.history['accuracy']
 plt.plot(acc)

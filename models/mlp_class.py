@@ -4,6 +4,7 @@ import os
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
+from sklearn.utils.estimator_checks import check_estimator
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -24,8 +25,16 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         Other attributes required to be a valid sklearn classifier.
     """
 
-    def __init__(self, use_gpu=False, output_dim=2, input_dim=50715, hidden_layer_dims=[100, 100],
-                 learning_rate=0.01, num_epochs=30, batch_size=30):
+    def __init__(
+            self,
+            use_gpu=False,
+            output_dim=2,
+            input_dim=100,
+            hidden_layer_dims=(100, 100),
+            learning_rate=0.01,
+            num_epochs=30,
+            batch_size=30
+    ):
         super(MLP, self).__init__()
         self.history = None
         self.model = None
@@ -39,6 +48,7 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         self.num_epochs = num_epochs
         # define forward model
         self.hidden = torch.nn.Linear(input_dim, 10)
+        self.hidden2 = torch.nn.Linear(10, 10)
         self.output = torch.nn.Linear(10, 2)
 
     # def build_model(self):
@@ -66,6 +76,7 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
 
         """
         x = F.relu(self.hidden(x))
+        x = F.relu(self.hidden2(x))
         x = F.softmax(self.output(x), dim=1)
         return x
 
@@ -102,7 +113,7 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
 
         train = torch.utils.data.TensorDataset(torch_x, torch_y)
         # not shuffling data here
-        train_loader = torch.utils.data.DataLoader(train, batch_size=self.batch_size)
+        train_loader = torch.utils.data.DataLoader(train, batch_size=self.batch_size, shuffle=True)
 
         loss_func = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
@@ -128,8 +139,8 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
 
             self.history["accuracy"].append(correct/len(train_loader))
             self.history["loss"].append(error)
-            print("Results for epoch {}, accuracy {}, MSE_loss {}".format(epoch + 1,
-                                                                          correct/len(train_loader), error))
+            print("Results for epoch {0}, accuracy {1}, MSE_loss {2}".format(epoch + 1,
+                                                                             correct/len(train_loader), error))
 
         return self
 
@@ -161,7 +172,7 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
             y_pred = self.model(x_pred.cuda() if self.gpu else x_pred)
 
             predictions = torch.argmax(y_pred.data, dim=1).numpy()
-            results = np.append(results, predictions.flatten())
+            results = np.append(results, predictions)
 
         return results
 
@@ -179,6 +190,7 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
         """
         # Run prediction model
         y_pred = self.predict(X)
+        # total number of data
         N = len(y)
         y = np.array(y)
         # total number of correct labels
@@ -186,6 +198,6 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
 
         # return accuracy score
         accuracy = correct / N
-        print(accuracy)
         return accuracy
 
+# check_estimator(MLP())
