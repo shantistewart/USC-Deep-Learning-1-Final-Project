@@ -19,7 +19,7 @@ Fs = data_loader.Fs
 # pass fft_bins into MLP model
 feature_gen = FeatureGenerator()
 freq_range = (55.0, 1760.0)
-n_bins = 100
+n_bins = 50
 N_fft = np.power(2, 16)
 feature_gen_params = {
     "Fs": Fs,
@@ -29,11 +29,12 @@ feature_gen_params = {
     "norm": True
 }
 X_fft_bin_train = feature_gen.generate_features("fft_bins", X_train, feature_gen_params)
+X_fft_bin_test = feature_gen.generate_features("fft_bins", X_test, feature_gen_params)
 print(X_fft_bin_train.shape)
 
-net = MLP()
-print(np.max(y_train))
-print()
-print()
+net = MLP(num_hidden_units=10, hidden_size=25)
 net.fit(X_fft_bin_train, y_train)
+y_pred = net.predict(X_fft_bin_test)
 
+accuracy = (y_pred == y_test).sum()
+print(accuracy/len(y_test))
