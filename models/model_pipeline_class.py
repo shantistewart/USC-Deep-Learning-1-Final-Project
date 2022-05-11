@@ -8,7 +8,6 @@ from sklearn.feature_selection import SelectKBest, SequentialFeatureSelector
 from sklearn.decomposition import PCA
 from sklearn.model_selection import cross_validate, GridSearchCV, RandomizedSearchCV
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
-from preprocessing.load_data_class import DataLoader
 from preprocessing.generate_features_class import FeatureGenerator
 
 
