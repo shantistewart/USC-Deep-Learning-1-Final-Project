@@ -19,7 +19,7 @@ test_fract = 0.2
 feature_type = "fft_bins"
 freq_range = (55.0, 1760.0)
 N_fft = np.power(2, 16)
-n_bins = 5
+n_bins = 100
 feature_gen_params = {
     "freq_range": freq_range,
     "n_bins": n_bins,
