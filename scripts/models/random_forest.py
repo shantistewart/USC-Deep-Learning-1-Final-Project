@@ -16,9 +16,9 @@ model = RandomForestClassifier()
 # fraction of total data to use for test set:
 test_fract = 0.2
 # feature generation parameters:
-feature_type = "harmonics"
+feature_type = "intervals"
 freq_range = (55.0, 1760.0)
-n_harmonics = 9
+n_harmonics = 15
 peak_height_fract = 0.05
 peak_sep = 10.0
 N_fft = np.power(2, 16)
@@ -31,7 +31,7 @@ feature_gen_params = {
     "norm": True
 }
 # feature normalization type:
-norm_type = "standard"
+norm_type = None
 # number of folds (K) to use in stratified K-fold cross validation:
 n_folds = 5
 
@@ -52,5 +52,6 @@ print("Hyperparameter search values:\n{}".format(hyperparams))
 
 # run model:
 run_model(data_folder, model, test_fract, feature_type, feature_gen_params, norm_type=norm_type,
-          hyperparams=hyperparams, search_type=search_type, metric=metric, n_iters=n_iters, n_folds=n_folds, verbose=2)
+          hyperparams=hyperparams, search_type=search_type, metric=metric, n_iters=n_iters, n_folds=n_folds,
+          final_eval=True, verbose=2)
 
