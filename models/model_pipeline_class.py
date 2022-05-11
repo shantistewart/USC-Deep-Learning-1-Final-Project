@@ -80,7 +80,7 @@ class ModelPipeline:
 
         # train model:
         self.model_pipe.fit(X_train, y_train)
-    
+
     def eval(self, eval_type, X_raw, y, feature_gen_params, n_folds=5, verbose=1):
         """Evaluates model on data.
 
@@ -137,6 +137,56 @@ class ModelPipeline:
             metrics["conf_matrix"] = conf_matrix
 
         return metrics
+
+    def tune_hyperparams(self, X_raw, y, feature_gen_params, hyperparams, search_type="grid", metric="accuracy",
+                         n_iters=None, n_folds=10, verbose=1):
+        """Tunes hyperparameters (i.e., model selection).
+
+        Args:
+            X_raw: List of raw audio data numpy arrays.
+                length: N
+            y: Labels.
+                dim: (N, )
+            feature_gen_params: Dictionary of parameters for feature generation.
+            hyperparams: Dictionary of hyperparameter values to search over.
+            search_type: Hyperparameter search type.
+                allowed values: "grid", "random"
+            metric: Type of metric to use for model evaluation.
+            n_iters: Number of hyperparameter combinations that are tried in random search (ignored if
+                search_type != "random")
+            n_folds: Number of folds (K) to use in stratified K-fold cross validation.
+            verbose: Nothing printed (0), best hyperparameters printed (not 0).
+
+        Returns:
+            model_pipe: sklearn Pipeline object for best model (i.e., model with best hyperparameters).
+            best_hyperparams: Best hyperparameters (dictionary).
+            best_cv_score: Cross-validation score of best model.
+        """
+
+        # validate hyperparameter search type:
+        if search_type != "grid" and search_type != "random":
+            raise Exception("Invalid hyperparameter search type.")
+
+        # generate features:
+        X = self.feature_gen.generate_features(self.feature_type, X_raw, feature_gen_params)
+
+        # tune hyperparameters:
+        if search_type == "grid":
+            search = GridSearchCV(self.model_pipe, hyperparams, cv=n_folds, scoring=metric)
+        elif search_type == "random":
+            search = RandomizedSearchCV(self.model_pipe, hyperparams, n_iter=n_iters, cv=n_folds, scoring=metric)
+        # run hyperparameter search:
+        search.fit(X, y)
+
+        # save best model, best hyperparameters, and best cross-validation score:
+        self.model_pipe = search.best_estimator_
+        self.best_hyperparams = search.best_params_
+        best_cv_score = search.best_score_
+        # print hyperparameter tuning results:
+        if verbose != 0:
+            print("Best hyperparameters: {}".format(self.best_hyperparams))
+
+        return self.model_pipe, self.best_hyperparams, best_cv_score
 
     def make_pipeline(self, model):
         """Creates a sklearn Pipeline object for model.

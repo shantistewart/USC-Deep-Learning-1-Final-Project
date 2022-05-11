@@ -38,7 +38,7 @@ def run_model(data_folder, model, test_fract, feature_type, feature_gen_params, 
             metrics["train"]["metric_name"] = training set metric_name metric
             metrics["val"]["metric_name"] = cross-validation metric_name metric
             metrics["test"]["metric_name"] = test set metric_name metric
-        best_models: Nested dictionary of best model information after hyperparameter tuning.
+        best_models: Dictionary of best model information after hyperparameter tuning.
             best_models["hyperparams"] = best model hyperparameters
             best_models["cv_score"] = best model cross-validation score.
     """
@@ -68,8 +68,14 @@ def run_model(data_folder, model, test_fract, feature_type, feature_gen_params, 
             print("Tuning model hyperparameters...")
         if hyperparams is None:
             raise Exception("Hyperparameter search values argument is none.")
-        # FILL IN LATER:
-        pass
+        best_model, best_hyperparams, best_cv_score = model_pipe.tune_hyperparams(X_raw_train, y_train,
+                                                                                  feature_gen_params, hyperparams,
+                                                                                  search_type=search_type,
+                                                                                  metric=metric, n_iters=n_iters,
+                                                                                  n_folds=n_folds, verbose=verbose)
+        # save best model information to dictionary:
+        best_models["hyperparams"] = best_hyperparams
+        best_models["cv_score"] = best_cv_score
 
     # evaluate model on training set:
     if verbose != 0:
