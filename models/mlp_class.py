@@ -11,6 +11,7 @@ from torch.autograd import Variable
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from sklearn.utils.multiclass import unique_labels
+from sklearn.metrics import mean_absolute_error
 
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -120,12 +121,15 @@ class MLP(torch.nn.Module, ClassifierMixin, BaseEstimator):
                 y_labels = target.cuda().numpy() if self.gpu else target.numpy()
             # y_pred_results = y_pred.cuda().data.numpy() if self.gpu else y_pred.data.numpy()
 
-                predictions = torch.argmax(y_pred, dim=1).numpy()
+                predictions = torch.argmax(y_pred.data, dim=1).numpy()
                 correct += (predictions == y_labels).sum()
+
+            error = mean_absolute_error(predictions, y_labels)
+
             self.history["accuracy"].append(correct/len(train_loader))
-            self.history["loss"].append(loss.item())
-            print("Results for epoch {}, accuracy {}, CE_loss {}".format(epoch + 1,
-                                                                          correct/len(train_loader), loss.item()))
+            self.history["loss"].append(error)
+            print("Results for epoch {}, accuracy {}, MSE_loss {}".format(epoch + 1,
+                                                                          correct/len(train_loader), error))
 
         return self
 

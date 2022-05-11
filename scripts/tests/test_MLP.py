@@ -34,7 +34,11 @@ example = 5
 
 # now that FFT peaks works properly, test MLP
 N = X_train_fft.shape[1]
-net = MLP(input_dim=N, output_dim=2, hidden_layer_dims=[5, 5])
+net = MLP(input_dim=N, output_dim=2, hidden_layer_dims=[5, 5], num_epochs=100)
 
 net.fit(X_train_fft, y_train)
 # net.predict(X_test, y_test)
+
+acc = net.history['accuracy']
+plt.plot(acc)
+plt.show()
