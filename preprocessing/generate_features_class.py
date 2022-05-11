@@ -27,7 +27,7 @@ class FeatureGenerator:
 
         Args:
             feature_type: Type of feature to generate.
-                allowed values: "harmonics", "fft_bins"
+                allowed values: "harmonics", "intervals, "fft_bins"
             X_raw: List of raw audio data numpy arrays.
                 length: N
             feature_gen_params: Dictionary of parameters for feature generation, with keys/values:
@@ -49,7 +49,7 @@ class FeatureGenerator:
         """
 
         # validate feature type:
-        if feature_type != "harmonics" and feature_type != "fft_bins":
+        if feature_type != "harmonics" and feature_type != "intervals" and feature_type != "fft_bins":
             raise Exception("Invalid feature type.")
 
         # extract general feature generation parameters:
@@ -75,6 +75,22 @@ class FeatureGenerator:
             X = self.harmonics(X_raw, Fs, freq_range, n_harmonics, peak_height_fract=peak_height_fract,
                                peak_sep=peak_sep, N_fft=None, norm=True)
             X = X.to_numpy()
+
+        elif feature_type == "intervals":
+            # compute harmonics first:
+            # extract specific feature generation parameters:
+            n_harmonics = feature_gen_params.get("n_harmonics")
+            peak_height_fract = feature_gen_params.get("peak_height_fract")
+            peak_sep = feature_gen_params.get("peak_sep")
+            if n_harmonics is None:
+                raise Exception("Missing specific feature generation parameters.")
+            # generate features:
+            harmonics_df = self.harmonics(X_raw, Fs, freq_range, n_harmonics, peak_height_fract=peak_height_fract,
+                               peak_sep=peak_sep, N_fft=None, norm=True)
+            harmonics = harmonics_df.to_numpy()
+
+            # compute intervals:
+            X = self.intervals(harmonics)
 
         elif feature_type == "fft_bins":
             # extract specific feature generation parameters:
@@ -104,7 +120,7 @@ class FeatureGenerator:
             norm: Selects whether to normalize raw audio data.
 
         Returns:
-            harmonics: Frequencies of harmonics.
+            harmonics_df: Frequencies of harmonics (DataFrame).
                 dim: (N, n_harmonics)
         """
 
@@ -180,6 +196,34 @@ class FeatureGenerator:
             harmonics_df[col] = harmonics_df[col].fillna(value=harmonics_df[col].mean())
 
         return harmonics_df
+
+    def intervals(self, harmonics):
+        """
+        Computes intervals between harmonics of audio data.
+
+        Args:
+            harmonics: Frequencies of harmonics.
+                dim: (N, n_harmonics)
+
+        Returns:
+            intervals: Intervals between harmonics of audio data.
+                dim: (N, n_harmonics-1 + n_harmonics-2)
+        """
+
+        (N, n_harmonics) = harmonics.shape
+        intervals = np.zeros((N, n_harmonics-1 + n_harmonics-2), dtype=float)
+        index = 0
+
+        # compute intervals between all pairs of adjacent harmonics:
+        for h in range(n_harmonics-1):
+            intervals[:, index] = np.log2(harmonics[:, h+1] / harmonics[:, h])
+            index += 1
+        # compute intervals between 1st harmonic and all other harmonics (except 2nd harmonic):
+        for h in range(2, n_harmonics):
+            intervals[:, index] = np.log2(harmonics[:, h] / harmonics[:, 0])
+            index += 1
+
+        return intervals
 
     def fft_bins(self, X_raw, Fs, freq_range, n_bins, N_fft=None, norm=True):
         """Computes binned FFTs of audio data.

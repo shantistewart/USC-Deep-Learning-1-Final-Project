@@ -16,7 +16,7 @@ class ModelPipeline:
 
     Attributes:
         feature_type: Type of feature to generate.
-            allowed values: "harmonics", "fft_bins"
+            allowed values: "harmonics", "intervals, "fft_bins"
         feature_gen: FeatureGenerator object
         norm_type: Type of feature normalization to use.
             allowed values: "standard", None
