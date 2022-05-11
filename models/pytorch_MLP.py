@@ -3,6 +3,7 @@
 Call to use a PyTorch MLP model
 """
 
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -14,12 +15,10 @@ class _MLP(nn.Module):
         self.output_dim = output_dim
         self.hidden_dim = input_dim
         self.hidden1 = nn.Linear(input_dim, self.hidden_dim)
-        self.hidden2 = nn.Linear(self.hidden_dim, 4)
-        self.output = nn.Linear(4, 2)
+        self.output = nn.Linear(self.hidden_dim, 1)
 
     def forward(self, x):
         x = F.relu(self.hidden1(x))
-        x = F.relu(self.hidden2(x))
-        x = F.softmax(self.output(x), dim=1)
+        x = torch.sigmoid(self.output(x))
 
         return x

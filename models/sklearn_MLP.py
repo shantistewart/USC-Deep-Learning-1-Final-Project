@@ -20,8 +20,7 @@ class MLP(BaseEstimator, TransformerMixin):
             self,
             num_epochs=50,
             learning_rate=0.01,
-            batch_size=50,
-            model=None
+            batch_size=50
     ):
 
         args, _, _, values = inspect.getargvalues(inspect.currentframe())
@@ -29,7 +28,7 @@ class MLP(BaseEstimator, TransformerMixin):
         for arg, val in values.items():
             setattr(self, arg, val)
 
-        self.model = model
+        self.model = None
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate
@@ -92,7 +91,7 @@ class MLP(BaseEstimator, TransformerMixin):
         # call pytorch model
         self.model = _MLP(input_dim, output_dim).to(self.device)
 
-        loss_function = nn.CrossEntropyLoss()
+        loss_function = nn.BCELoss()
         optimizer = optim.Adam(self.model.parameters())
         if self.batch_size is None:
             return self._batch_train(x_train, y_train, self.model, loss_function, optimizer)
@@ -128,12 +127,10 @@ class MLP(BaseEstimator, TransformerMixin):
             # optimize
             optimizer.step()
 
-            predictions = torch.argmax(y_pred.data, dim=1).numpy()
-            correct += (predictions == y_train).sum()
+            predictions = int(np.round(y_pred.data.numpy()))
 
-            print("Train Epoch: {0}, Accuracy: {1}, Loss: {2}".format(
+            print("Train Epoch: {0}, Loss: {1},".format(
                 epoch,
-                correct / len(x_train),
                 loss.item()
             ))
 
@@ -163,8 +160,8 @@ class MLP(BaseEstimator, TransformerMixin):
 
                 # forward pass
                 y_pred = model.forward(Variable(minibatch))
-
-                loss = loss_function(y_pred.float(), Variable(target.long()))
+                y_pred = y_pred.reshape((-1,))
+                loss = loss_function(y_pred, Variable(target.float()))
 
                 # back prop
                 optimizer.zero_grad()
@@ -173,7 +170,7 @@ class MLP(BaseEstimator, TransformerMixin):
                 # optimize
                 optimizer.step()
 
-            predictions = torch.argmax(y_pred.data, dim=1).float().numpy()
+            # predictions = int(np.round(y_pred.data.numpy()))
 
             print("Train Epoch: {0} Loss: {1}".format(
                 epoch,
@@ -182,7 +179,7 @@ class MLP(BaseEstimator, TransformerMixin):
 
         return model
 
-    def predict(self, X, y, model):
+    def predict(self, X):
         """
         Makes a prediction using the trained pytorch model
 
@@ -202,14 +199,13 @@ class MLP(BaseEstimator, TransformerMixin):
         results = []
         batches = np.ceil(len(X) / self.batch_size)
 
-        N = len(y)
-
         for batch in np.array_split(X, batches):
-            model.eval()
+            self.model.eval()
             x_pred = Variable(torch.from_numpy(batch).float())
             y_pred = self.model.forward(x_pred)
+            y_pred = y_pred.reshape((-1,))
 
-            predictions = torch.argmax(y_pred.data, dim=1).numpy()
+            predictions = np.round(y_pred.data.numpy()).astype(int)
             results = np.append(results, predictions)
 
         return np.array(results)

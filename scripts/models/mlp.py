@@ -30,5 +30,6 @@ feature_gen_params = {
 norm_type = None
 
 # run model:
-run_model(data_folder, model, test_fract, feature_type, feature_gen_params, norm_type=norm_type, tune_model=False)
+run_model(data_folder, model, test_fract, feature_type, feature_gen_params, norm_type=norm_type, tune_model=False,
+          verbose=2)
 
