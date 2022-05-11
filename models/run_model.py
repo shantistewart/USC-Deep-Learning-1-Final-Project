@@ -94,8 +94,7 @@ def run_model(data_folder, model, test_fract, feature_type, feature_gen_params, 
             print("\nEvaluating model on test set...")
         # first, (re)train model on full training set (since cross validation alters the sklearn Pipeline object):
         model_pipe.train(X_raw_train, y_train, feature_gen_params)
-        test_metrics = model_pipe.eval("test", X_raw_train, y_train, feature_gen_params, n_folds=n_folds,
-                                       verbose=verbose)
+        test_metrics = model_pipe.eval("test", X_raw_test, y_test, feature_gen_params, n_folds=n_folds, verbose=verbose)
     if verbose != 0:
         print("")
 
