@@ -55,7 +55,7 @@ raw audio waveform.
 ## Authors
 
 * **Shanti Stewart** -- M.S. student in Machine Learning & Data Science (Electrical & Computer Engineering) at the
-* University of Southern California.
+University of Southern California.
    * [LinkedIn](https://www.linkedin.com/in/shanti-stewart/)
    * [GitHub](https://github.com/shantistewart)
 * **Jeffery Wong** -- M.S. student in Electrical & Computer Engineering at the  University of Southern California.
