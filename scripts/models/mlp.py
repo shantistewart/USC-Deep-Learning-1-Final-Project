@@ -2,8 +2,8 @@
 
 
 import numpy as np
-from models.sklearn_MLP import MLP
-from models.run_model import run_model
+from modeling.sklearn_MLP import MLP
+from modeling.run_model import run_model
 
 
 # path to data folder:

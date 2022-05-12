@@ -5,7 +5,7 @@ data_folder = "../../data/"
 
 import numpy as np
 import matplotlib.pyplot as plt
-from models.sklearn_MLP import MLP
+from modeling.sklearn_MLP import MLP
 from preprocessing.load_data_class import DataLoader
 from preprocessing.generate_features_class import FeatureGenerator
 

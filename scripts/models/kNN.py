@@ -3,7 +3,7 @@
 
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
-from models.run_model import run_model
+from modeling.run_model import run_model
 
 
 # path to data folder:

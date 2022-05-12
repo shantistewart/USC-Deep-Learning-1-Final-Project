@@ -13,7 +13,7 @@ import torch.utils.data
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import StepLR
 
-from models.pytorch_MLP import _MLP
+from modeling.pytorch_MLP import _MLP
 
 
 class MLP(BaseEstimator, TransformerMixin):

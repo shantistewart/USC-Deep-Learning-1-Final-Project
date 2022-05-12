@@ -1,8 +1,8 @@
-"""File containing function for running models (training, hyperparameter tuning, evaluation)."""
+"""File containing function for running modeling (training, hyperparameter tuning, evaluation)."""
 
 
 from preprocessing.load_data_class import DataLoader
-from models.model_pipeline_class import ModelPipeline
+from modeling.model_pipeline_class import ModelPipeline
 
 
 def run_model(data_folder, model, test_fract, feature_type, feature_gen_params, norm_type=None, feature_select=None,
