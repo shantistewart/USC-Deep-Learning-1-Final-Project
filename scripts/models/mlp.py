@@ -2,7 +2,7 @@
 
 
 import numpy as np
-from modeling.sklearn_MLP import MLP
+from modeling.mlp_sklearn_class import MLP
 from modeling.run_model import run_model
 
 
