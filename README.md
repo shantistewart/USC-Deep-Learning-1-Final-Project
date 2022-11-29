@@ -1,8 +1,8 @@
 
 
-# USC-Deep-Learning-Final-Project
+# USC-Deep-Learning-1-Final-Project
 
-Final project for Deep Learning (EE 541) course at USC.
+Final project for Deep Learning 1 (EE 541) course at USC.
 The goal of this project was to develop several machine learning models to classify a chord as major or minor, given its
 raw audio waveform.
 
